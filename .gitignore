@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 运行时产物
+*.log
+parse_service/webui.port
+
+# IDEA 易变文件（工程配置保留，仅忽略工作区状态）
+.idea/workspace.xml
+.idea/tasks.xml
+
+# Node / 前端构建产物
+web/node_modules/
+web/dist/
+*.local
+
+# 逆向研究文档：含对第三方系统的分析，不随公开仓库发布（本地保留）
+docs/
+
+# 系统
+Thumbs.db
+.DS_Store
