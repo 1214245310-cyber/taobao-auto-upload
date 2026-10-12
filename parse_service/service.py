@@ -1,7 +1,7 @@
 """解析编排服务。
 
 负责：单链接解析、批量解析（文件上传）、结果存储、违禁词校验（占位）、
-以及把标准化 JSON 解码成目标店铺上货 payload（桥接「上新」执行器）。
+把标准化 JSON 解码成目标店铺上货 payload，以及通过官方 API 上货到目标店铺。
 """
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from typing import Optional
 
 from .models import Platform, ProductParseResult, ParseStatus, Sku
 from .providers import ParseProvider
+from .publish.top_client import TopClient, TopApiError
 
 
 class ForbiddenWordChecker:
@@ -115,3 +116,22 @@ class ParseService:
             "sourceUrl": res.source_url,
             "sourcePlatform": res.platform.value,
         }
+
+    # ---- 通过官方 API 上货到目标淘宝店铺（对应 taobao.item.add） ----
+    def publish_to_shop(self, res: ProductParseResult, target_shop_id: str,
+                        top_client: Optional[TopClient] = None,
+                        cid: Optional[int] = None, **kwargs) -> dict:
+        """通过淘宝开放平台官方 API 上货到目标店铺。
+
+        用户决策（2026-10-12）：上货走官方 API（个人店铺 + 店铺授权 session 即可）。
+        解析出的标准化商品在此直接调 TopClient.add_item 发布。
+        top_client 需先配置好 app_key / app_secret / session。
+        target_shop_id 仅用于记录/日志；真实发布由 top_client.session 绑定的店铺授权决定。
+        """
+        if top_client is None:
+            raise NotImplementedError(
+                "未配置淘宝开放平台客户端：传入 TopClient(app_key=..., app_secret=..., session=...) "
+                "再调用 publish_to_shop。"
+            )
+        kwargs.setdefault("approve_status", "onsale")
+        return top_client.add_item(res, cid=cid, **kwargs)

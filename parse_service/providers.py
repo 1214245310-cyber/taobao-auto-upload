@@ -1,12 +1,16 @@
 """解析服务商适配器。
 
-原系统把「真正的抓取/解码」外包给第三方服务（实测为「万象 WANXIANG」，
+用户决策（2026-10-12）：解析走第三方服务（万邦/onebound/万象 同类），绕开企业认证门槛。
+原系统把「真正的抓取/解码」外包给第三方（实测万象 WANXIANG，
 baseUrl=http://121.5.176.133:8097/kunpeng-interface/...）。
-本文件预留 WanxiangProvider 适配器，服务商地址/令牌**先空着**，后续填入即可。
+
+本文件提供通用 ThirdPartyParseProvider（任意第三方聚合服务适配器），WanxiangProvider
+作为其预设子类。服务商地址/令牌**先空着**，填入即可上线。
 """
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from .models import Platform, ParseStatus, Sku, ProductParseResult
 
@@ -27,34 +31,45 @@ class ParseProvider(ABC):
         return [self.parse_single(u, platform) for u in urls]
 
 
-class WanxiangProvider(ParseProvider):
-    """万象解析服务适配器。
+class ThirdPartyParseProvider(ParseProvider):
+    """通用第三方商品解析聚合服务适配器（万邦 / onebound / 万象 同类）。
 
-    ⚠️ 服务商配置先空着：base_url / access_token 留空时调用会明确报错，
-       提示「未配置」。后续拿到服务商地址与令牌后填入即可上线。
+    用户决策（2026-10-12）：解析走第三方服务，绕开企业认证门槛。
+    不同服务商只是 base_url / access_token / 各平台 endpoint 不同，统一归一到本类。
+    base_url / access_token 留空时调用即报错，提示「未配置」。
     """
 
-    name = "WANXIANG"
-
-    def __init__(self, base_url: str = "", access_token: str = ""):
+    def __init__(self, name: str, base_url: str = "", access_token: str = "",
+                 platform_endpoints: Optional[dict] = None):
+        self.name = name
         self.base_url = base_url
         self.access_token = access_token
+        self.platform_endpoints = dict(platform_endpoints or {})
         self.configured = bool(base_url and access_token)
 
     def _ensure_configured(self) -> None:
         if not self.base_url or not self.access_token:
             raise NotImplementedError(
-                "解析服务商未配置：请在 WanxiangProvider(base_url=..., access_token=...) "
-                "中填入万象服务的 base_url 与 access_token 后再调用。"
+                f"解析服务商[{self.name}]未配置：ThirdPartyParseProvider("
+                f"name='{self.name}', base_url=..., access_token=...) 填入后调用。"
             )
 
     def parse_single(self, url: str, platform: Platform) -> ProductParseResult:
         self._ensure_configured()
-        # TODO(接入服务商): 实际调用
-        #   POST {base_url}/{platform_endpoint}  Headers: Authorization: Bearer {access_token}
+        # TODO(接入服务商): POST {base_url}/{platform_endpoints.get(platform)}  Bearer {access_token}
         #   把上游返回归一化成 ProductParseResult（标题/主图/详情图/价格/SKU/详情…）
-        # 示意见 demo.py 的 MockProvider，结构一致。
-        raise NotImplementedError("WanxiangProvider.parse_single 待接入服务商实现")
+        #   结构参考 demo.py 的 MockProvider。
+        raise NotImplementedError(f"{self.name}.parse_single 待接入服务商实现")
+
+
+class WanxiangProvider(ThirdPartyParseProvider):
+    """万象(WANXIANG)解析服务 —— 原系统实测使用的第三方，作为 ThirdPartyParseProvider 的预设。
+
+    默认 base_url 指向原系统实测地址；access_token 仍留空（需向服务商索取）。
+    """
+
+    def __init__(self, base_url: str = "http://121.5.176.133:8097/kunpeng-interface/", access_token: str = ""):
+        super().__init__(name="WANXIANG", base_url=base_url, access_token=access_token)
 
 
 class MockProvider(ParseProvider):
@@ -99,3 +114,15 @@ class MockProvider(ParseProvider):
             category="示例/服饰",
             brand="MockBrand",
         )
+
+
+def get_provider(name: str = "wanxiang", **kw) -> ParseProvider:
+    """解析服务商工厂：按名字返回对应适配器实例。
+
+    已注册：wanxiang/万象 -> WanxiangProvider。
+    其它服务商（万邦/onebound…）可直接传 ThirdPartyParseProvider(name=..., base_url=..., access_token=...)。
+    """
+    n = (name or "").lower()
+    if n in ("wanxiang", "万象"):
+        return WanxiangProvider(**kw)
+    return ThirdPartyParseProvider(name=name.upper(), **kw)
