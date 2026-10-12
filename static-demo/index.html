@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>淘宝自动上货系统 · 静态演示</title>
+  <style>
+    :root {
+      --primary: #409eff;
+      --primary-deep: #1d6fd6;
+      --bg: #f0f2f5;
+      --panel: #ffffff;
+      --text: #1f2329;
+      --muted: #8a919f;
+      --border: #e5e7eb;
+      --side: #1f2937;
+      --side-2: #111827;
+      --green: #18a058;
+      --orange: #f0a020;
+      --red: #d03050;
+      --blue: #2080f0;
+      --gray: #909399;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+    /* ---------- 登录 ---------- */
+    #login {
+      position: fixed; inset: 0;
+      background: linear-gradient(135deg, #1f2937, #374151);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50;
+    }
+    .login-card {
+      width: 380px; background: #fff; border-radius: 14px;
+      padding: 36px 32px; box-shadow: 0 12px 48px rgba(0,0,0,.28);
+    }
+    .login-card h2 { font-size: 22px; margin-bottom: 4px; }
+    .login-card .sub { color: var(--muted); margin-bottom: 26px; font-size: 13px; }
+    .field { margin-bottom: 16px; }
+    .field label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .field input, .field select {
+      width: 100%; height: 40px; border: 1px solid var(--border);
+      border-radius: 8px; padding: 0 12px; font-size: 14px; outline: none;
+      transition: border-color .2s;
+    }
+    .field input:focus, .field select:focus { border-color: var(--primary); }
+    .captcha-row { display: flex; gap: 10px; }
+    .captcha-row input { flex: 1; }
+    .captcha-img {
+      width: 116px; height: 40px; border-radius: 8px; cursor: pointer;
+      background: #eef2f7; display:flex; align-items:center; justify-content:center;
+      font-weight: 700; font-size: 20px; letter-spacing: 4px; color: var(--primary-deep);
+      user-select: none; border: 1px solid var(--border);
+    }
+    .btn {
+      height: 40px; border: none; border-radius: 8px; cursor: pointer;
+      font-size: 14px; font-weight: 500; padding: 0 18px; transition: .15s;
+    }
+    .btn-primary { background: var(--primary); color: #fff; width: 100%; }
+    .btn-primary:hover { background: var(--primary-deep); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+    .login-tip { font-size: 12px; color: var(--gray); margin-top: 14px; text-align:center; }
+
+    /* ---------- 主框架 ---------- */
+    #app { display: none; min-height: 100vh; }
+    .side {
+      position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
+      background: var(--side); color: #cfd6e0; display: flex; flex-direction: column;
+    }
+    .logo {
+      height: 60px; display: flex; align-items: center; gap: 10px; padding: 0 20px;
+      background: var(--side-2); font-weight: 700; color: #fff; font-size: 16px;
+    }
+    .logo .dot { width: 26px; height: 26px; border-radius: 7px; background: var(--primary);
+      display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; }
+    .menu { padding: 12px 10px; flex: 1; }
+    .menu-item {
+      display: flex; align-items: center; gap: 10px; padding: 11px 14px;
+      border-radius: 8px; cursor: pointer; font-size: 14px; margin-bottom: 4px; color: #cfd6e0;
+    }
+    .menu-item:hover { background: rgba(255,255,255,.06); }
+    .menu-item.active { background: var(--primary); color: #fff; }
+    .menu-item .ic { width: 18px; text-align: center; }
+    .side-foot { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: 12px; }
+    .side-foot a { color: var(--primary); cursor: pointer; }
+
+    .main { margin-left: 220px; }
+    .topbar {
+      height: 60px; background: #fff; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+    }
+    .topbar h1 { font-size: 17px; font-weight: 600; }
+    .topbar .who { font-size: 13px; color: var(--muted); }
+    .content { padding: 22px; }
+
+    /* ---------- 通用卡片 ---------- */
+    .card {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px; margin-bottom: 18px;
+    }
+    .card h3 { font-size: 15px; margin-bottom: 14px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .stat {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
+    }
+    .stat .label { font-size: 13px; color: var(--muted); }
+    .stat .value { font-size: 26px; font-weight: 700; margin-top: 8px; color: var(--primary); }
+
+    /* ---------- 表格 ---------- */
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; background: #fafbfc; }
+    tbody tr:hover { background: #f7f9fc; }
+
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+    .b-unpublished { background: #eef2f7; color: var(--gray); }
+    .b-notdue { background: #fff4e6; color: var(--orange); }
+    .b-ready { background: #e6f4ff; color: var(--blue); }
+    .b-overdue { background: #ffe9ec; color: var(--red); }
+    .b-accepted { background: #e8f7ee; color: var(--green); }
+    .b-done { background: #e7f0ff; color: var(--primary); }
+
+    .toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
+    .btn-sm { height: 34px; font-size: 13px; padding: 0 14px; }
+    .btn-success { background: var(--green); color: #fff; }
+    .btn-success:hover { filter: brightness(.95); }
+    .btn-ghost { background: #fff; border: 1px solid var(--border); color: var(--text); }
+    .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-danger { background: #fff; border: 1px solid #f5c2cb; color: var(--red); }
+    .btn-link { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 13px; padding: 2px 6px; }
+    .btn-link.danger { color: var(--red); }
+
+    /* ---------- 解析 ---------- */
+    .url-bar { display: flex; max-width: 760px; }
+    .url-bar select { border: 1px solid var(--border); border-right: none; border-radius: 8px 0 0 8px; padding: 0 10px; background: #fafbfc; outline: none; }
+    .url-bar input { flex: 1; height: 40px; border: 1px solid var(--border); padding: 0 12px; outline: none; font-size: 14px; }
+    .url-bar button { border: none; background: var(--primary); color: #fff; padding: 0 22px; border-radius: 0 8px 8px 0; cursor: pointer; font-size: 14px; }
+    .url-bar button:disabled { opacity: .6; }
+    pre.json {
+      background: #0d1117; color: #c9d1d9; padding: 16px; border-radius: 8px;
+      overflow: auto; max-height: 440px; font-size: 12.5px; line-height: 1.6;
+    }
+    .kv { display:flex; gap:24px; flex-wrap: wrap; font-size:13px; color:var(--muted); margin-top:10px; }
+    .kv b { color: var(--text); }
+
+    /* ---------- 弹窗 ---------- */
+    .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: center; justify-content: center; z-index: 40; }
+    .mask.show { display: flex; }
+    .modal { width: 480px; background: #fff; border-radius: 12px; padding: 22px; }
+    .modal h3 { font-size: 16px; margin-bottom: 18px; }
+    .modal .field { margin-bottom: 14px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+
+    /* ---------- Toast ---------- */
+    #toast {
+      position: fixed; top: 22px; left: 50%; transform: translateX(-50%);
+      background: #2b2f36; color: #fff; padding: 11px 20px; border-radius: 8px;
+      font-size: 13.5px; z-index: 60; opacity: 0; transition: opacity .25s; pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+    .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation: spin .7s linear infinite; vertical-align:-2px; margin-right:6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .tag { font-size: 11px; color: var(--primary); border: 1px solid #cfe3ff; background: #f0f7ff; padding: 1px 7px; border-radius: 6px; margin-left: 8px; vertical-align: middle; }
+  </style>
+</head>
+<body>
+  <!-- ============ 登录 ============ -->
+  <div id="login">
+    <div class="login-card">
+      <h2>欢迎回来 👋🏻</h2>
+      <div class="sub">LOA · 淘宝自动上货（静态演示）</div>
+      <div class="field">
+        <label>用户名</label>
+        <input id="lg-user" placeholder="用户名" value="张三" />
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input id="lg-pwd" type="password" placeholder="密码" value="123456" />
+      </div>
+      <div class="field">
+        <label>验证码</label>
+        <div class="captcha-row">
+          <input id="lg-code" placeholder="验证码" />
+          <div class="captcha-img" id="lg-captcha" title="点击刷新">--</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="lg-btn" onclick="doLogin()">登 录</button>
+      <div class="login-tip">演示环境 · 任意账号密码 + 验证码算式结果即可进入</div>
+    </div>
+  </div>
+
+  <!-- ============ 主框架 ============ -->
+  <div id="app">
+    <aside class="side">
+      <div class="logo"><span class="dot">L</span> LOA</div>
+      <nav class="menu" id="menu">
+        <div class="menu-item" data-view="dashboard"><span class="ic">📊</span> 作战大屏</div>
+        <div class="menu-item" data-view="publish"><span class="ic">📦</span> 批量上新</div>
+        <div class="menu-item" data-view="parse"><span class="ic">🔗</span> 链接解析</div>
+      </nav>
+      <div class="side-foot">
+        当前用户：<b style="color:#fff">张三</b><br />
+        <a onclick="doLogout()">退出登录</a>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <h1 id="page-title">作战大屏</h1>
+        <div class="who">淘宝自动上货系统复刻 · 静态演示版</div>
+      </header>
+      <div class="content" id="view"></div>
+    </div>
+  </div>
+
+  <!-- ============ 弹窗 ============ -->
+  <div class="mask" id="mask">
+    <div class="modal">
+      <h3>新建上货任务</h3>
+      <div class="field"><label>批次名称</label><input id="f-batch" placeholder="例如：双11女装批次" /></div>
+      <div class="field"><label>目标店铺</label>
+        <select id="f-shop"><option>示例店铺 A</option><option>示例店铺 B</option></select></div>
+      <div class="field"><label>上货模板</label>
+        <select id="f-tpl"><option>默认模板</option><option> clothing 模板</option></select></div>
+      <div class="field"><label>执行方式</label>
+        <select id="f-mode"><option value="once">一次性</option><option value="schedule">定时持续</option></select></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">取消</button>
+        <button class="btn btn-primary" style="width:auto" onclick="submitTask()">提交</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+<script>
+  // ---------- 登录 ----------
+  function refreshCaptcha() {
+    const a = Math.floor(Math.random() * 9) + 1, b = Math.floor(Math.random() * 9) + 1;
+    window.__cap = a + b;
+    document.getElementById('lg-captcha').textContent = a + ' + ' + b + ' = ?';
+  }
+  function doLogin() {
+    const code = document.getElementById('lg-code').value.trim();
+    if (!code) return toast('请输入验证码');
+    if (parseInt(code, 10) !== window.__cap) return toast('验证码错误，请重试');
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    switchView('dashboard');
+  }
+  function doLogout() {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('login').style.display = 'flex';
+    refreshCaptcha();
+  }
+
+  // ---------- 视图切换 ----------
+  const titles = { dashboard: '作战大屏', publish: '批量上新', parse: '链接解析' };
+  function switchView(v) {
+    document.querySelectorAll('.menu-item').forEach(m => m.classList.toggle('active', m.dataset.view === v));
+    document.getElementById('page-title').textContent = titles[v];
+    if (v === 'dashboard') renderDashboard();
+    if (v === 'publish') renderPublish();
+    if (v === 'parse') renderParse();
+  }
+  document.querySelectorAll('.menu-item').forEach(m => m.addEventListener('click', () => switchView(m.dataset.view)));
+
+  // ---------- 数据 ----------
+  const statusMap = {
+    UNPUBLISHED: ['待发布', 'b-unpublished'],
+    NOT_DUE: ['未到期', 'b-notdue'],
+    CS_READY: ['客服就绪', 'b-ready'],
+    OVERDUE: ['已逾期', 'b-overdue'],
+    ACCEPTED: ['已受理', 'b-accepted'],
+    DONE: ['已完成', 'b-done'],
+  };
+  let tasks = [
+    { batchNo: 'TB-20261012-001', shop: '示例店铺 A', status: 'CS_READY', done: 12, total: 50 },
+    { batchNo: 'TB-20261011-014', shop: '示例店铺 B', status: 'ACCEPTED', done: 38, total: 60 },
+    { batchNo: 'TB-20261010-009', shop: '示例店铺 A', status: 'DONE', done: 50, total: 50 },
+    { batchNo: 'TB-20261012-003', shop: '示例店铺 B', status: 'OVERDUE', done: 4, total: 30 },
+    { batchNo: 'TB-20261009-021', shop: '示例店铺 A', status: 'UNPUBLISHED', done: 0, total: 45 },
+  ];
+
+  // ---------- 大屏 ----------
+  function renderDashboard() {
+    const cards = [
+      { label: '本月团队总业绩', value: '¥394,113.71' },
+      { label: '今日业绩', value: '¥16,065.68' },
+      { label: '在册客服', value: '128' },
+      { label: '团队数', value: '10' },
+    ];
+    const rank = [
+      { rank: 1, name: '李四', amount: '14,664' },
+      { rank: 2, name: '王五', amount: '14,209' },
+      { rank: 3, name: '赵六', amount: '13,161' },
+      { rank: 4, name: '钱七', amount: '11,888' },
+      { rank: 5, name: '孙八', amount: '10,540' },
+    ];
+    document.getElementById('view').innerHTML = `
+      <div class="stat-grid">
+        ${cards.map(c => `<div class="stat"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`).join('')}
+      </div>
+      <div class="card">
+        <h3>本月客服排行（128 人）</h3>
+        <table>
+          <thead><tr><th>排名</th><th>客服</th><th>业绩</th></tr></thead>
+          <tbody>${rank.map(r => `<tr><td>${r.rank}</td><td>${r.name}</td><td>${r.amount}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  }
+
+  // ---------- 批量上新 ----------
+  function renderPublish() {
+    const rows = tasks.map((t, i) => {
+      const [txt, cls] = statusMap[t.status];
+      const pct = Math.round(t.done / t.total * 100);
+      return `<tr>
+        <td>${t.batchNo}</td>
+        <td>${t.shop}</td>
+        <td><span class="badge ${cls}">${txt}</span></td>
+        <td>${t.done} / ${t.total}（${pct}%）</td>
+        <td>
+          <button class="btn-link" onclick="pauseTask(${i})">暂停</button>
+          <button class="btn-link" onclick="resumeTask(${i})">继续</button>
+          <button class="btn-link danger" onclick="termTask(${i})">终止</button>
+        </td>
+      </tr>`;
+    }).join('');
+    document.getElementById('view').innerHTML = `
+      <div class="toolbar">
+        <button class="btn btn-primary btn-sm" onclick="openModal()">+ 新建上货任务</button>
+        <button class="btn btn-ghost btn-sm" onclick="renderPublish()">刷新</button>
+        <span class="tag">限额：日 50 / 月 600</span>
+      </div>
+      <div class="card" style="padding:0">
+        <table>
+          <thead><tr><th>批次号</th><th>目标店铺</th><th>状态</th><th>进度</th><th>操作</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  }
+  function pauseTask(i) { if (tasks[i].status !== 'DONE') { tasks[i].status = 'UNPUBLISHED'; toast('已暂停：' + tasks[i].batchNo); renderPublish(); } }
+  function resumeTask(i) { if (tasks[i].status !== 'DONE') { tasks[i].status = 'CS_READY'; toast('已继续：' + tasks[i].batchNo); renderPublish(); } }
+  function termTask(i) { tasks[i].status = 'DONE'; tasks[i].done = tasks[i].total; toast('已终止并完成：' + tasks[i].batchNo); renderPublish(); }
+
+  // ---------- 链接解析 ----------
+  function renderParse() {
+    document.getElementById('view').innerHTML = `
+      <div class="card">
+        <h3>链接解析 <span class="tag">解析执行器 ⬜ 骨架</span></h3>
+        <div class="url-bar">
+          <select id="p-plat">
+            <option value="TAOBAO">淘宝</option>
+            <option value="ALI1688">1688</option>
+            <option value="PDD">拼多多</option>
+            <option value="JD">京东</option>
+          </select>
+          <input id="p-url" placeholder="粘贴淘宝 / 1688 商品链接，例如 https://item.taobao.com/item.htm?id=..." />
+          <button id="p-btn" onclick="onParse()">解析</button>
+        </div>
+      </div>
+      <div id="p-result"></div>`;
+  }
+  function onParse() {
+    const url = document.getElementById('p-url').value.trim();
+    if (!url) return toast('请先粘贴商品链接');
+    const btn = document.getElementById('p-btn');
+    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>解析中';
+    setTimeout(() => {
+      btn.disabled = false; btn.textContent = '解析';
+      const plat = document.getElementById('p-plat').value;
+      const sample = buildSample(url, plat);
+      window.__last = sample;
+      document.getElementById('p-result').innerHTML = `
+        <div class="card">
+          <h3>解析结果（标准化商品 JSON）<span class="tag">ProductParseResult</span></h3>
+          <pre class="json">${JSON.stringify(sample, null, 2)}</pre>
+          <div class="kv">
+            <span>标题：<b>${sample.title}</b></span>
+            <span>价格：<b>¥${sample.price}</b></span>
+            <span>SKU数：<b>${sample.skus.length}</b></span>
+            <span>状态：<b>${sample.status}</b></span>
+          </div>
+          <button class="btn btn-success btn-sm" style="margin-top:14px" onclick="onPublish()">解码上货</button>
+        </div>`;
+    }, 900);
+  }
+  function buildSample(url, plat) {
+    return {
+      platform: plat,
+      sourceUrl: url,
+      parseStatus: 'SUCCESS',
+      title: '2026春季新款 女士针织开衫 慵懒风外套',
+      price: '129.00',
+      currency: 'CNY',
+      images: ['https://img.example.com/1.jpg', 'https://img.example.com/2.jpg'],
+      description: '宽松版型，亲肤面料，多色可选……',
+      skus: [
+        { skuId: 'SKU-RED-M', props: { 颜色: '红色', 尺码: 'M' }, price: '129.00', stock: 200 },
+        { skuId: 'SKU-RED-L', props: { 颜色: '红色', 尺码: 'L' }, price: '129.00', stock: 150 },
+        { skuId: 'SKU-BLK-M', props: { 颜色: '黑色', 尺码: 'M' }, price: '129.00', stock: 180 },
+      ],
+      status: 'OK',
+      parsedAt: new Date().toISOString(),
+    };
+  }
+  function onPublish() {
+    if (!window.__last) return toast('请先解析');
+    toast('已生成上货 payload（骨架，待接执行器）');
+  }
+
+  // ---------- 弹窗 ----------
+  function openModal() { document.getElementById('mask').classList.add('show'); }
+  function closeModal() { document.getElementById('mask').classList.remove('show'); }
+  function submitTask() {
+    const name = document.getElementById('f-batch').value.trim() || ('批次' + Date.now()).slice(-6);
+    tasks.unshift({ batchNo: 'TB-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + String(tasks.length+1).padStart(3,'0'), shop: document.getElementById('f-shop').value, status: 'UNPUBLISHED', done: 0, total: 50 });
+    closeModal(); toast('已创建任务：' + name); renderPublish();
+  }
+  document.getElementById('mask').addEventListener('click', e => { if (e.target.id === 'mask') closeModal(); });
+
+  // ---------- Toast ----------
+  let toastTimer;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // init
+  refreshCaptcha();
+  document.getElementById('lg-captcha').addEventListener('click', refreshCaptcha);
+</script>
+</body>
+</html>

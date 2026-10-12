@@ -29,9 +29,9 @@ const cards = [
   { label: '团队数', value: '10' },
 ]
 const rankRows = [
-  { rank: 1, name: '王佩', amount: '14,664' },
-  { rank: 2, name: '陈晓瑞', amount: '14,209' },
-  { rank: 3, name: '张茜茜2', amount: '13,161' },
+  { rank: 1, name: '李四', amount: '14,664' },
+  { rank: 2, name: '王五', amount: '14,209' },
+  { rank: 3, name: '赵六', amount: '13,161' },
 ]
 </script>
 
