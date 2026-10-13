@@ -34,6 +34,25 @@
   --shadow: 0 1px 2px rgba(31, 35, 41, .04);
   font-size: 14px;
 }
+/* 暗黑模式 */
+body.dark {
+  --bg: #14161a;
+  --card: #1d2026;
+  --border: #2e3238;
+  --border-light: #262a30;
+  --text: #e8eaed;
+  --text-2: #a8adb5;
+  --text-3: #6f757d;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3);
+  --primary-bg: #16294d;
+  --info-bg: #16294d;
+  --success-bg: #16260f;
+  --warning-bg: #2e2410;
+  --error-bg: #35191b;
+}
+body.dark .input, body.dark .select, body.dark .pg, body.dark .pg-size { background: #262a30; color: var(--text); }
+body.dark .team-stat, body.dark .alert-item { background: #22262c; }
+body.dark .pagination .pg:hover { color: var(--primary-hover); }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { height: 100%; }
 body {
@@ -149,6 +168,18 @@ input, select, textarea { font-family: inherit; font-size: 13px; color: var(--te
 }
 .login-btn:hover { background: var(--primary-hover); }
 .login-err { color: var(--error); font-size: 12px; min-height: 18px; margin: -8px 0 8px; }
+.login-others {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--border);
+  font-size: 12px; color: var(--text-3);
+}
+.login-others a {
+  width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border);
+  display: inline-flex; align-items: center; justify-content: center; color: var(--text-2);
+  transition: all .15s;
+}
+.login-others a:hover { border-color: var(--primary); color: var(--primary); }
+.login-others a svg { width: 15px; height: 15px; }
 
 .admin-wrap { display: flex; height: 100vh; overflow: hidden; }
 .sidebar {
@@ -302,6 +333,27 @@ table.tbl tbody tr:hover { background: #f8fafd; }
 .rank-row .amt { color: var(--text); font-variant-numeric: tabular-nums; }
 .rank-row .rate { color: var(--success); font-size: 11px; width: 44px; text-align: right; }
 
+/* 排名徽章（小） */
+.rank-badge { flex: none; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; background: #c9ced6; font-size: 11px; font-weight: 600; }
+.rank-badge.r1 { background: var(--gold); }
+.rank-badge.r2 { background: var(--silver); }
+.rank-badge.r3 { background: var(--bronze); }
+
+/* KPI 图标 */
+.kpi-ic { flex: none; width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.kpi-ic svg { width: 22px; height: 22px; }
+.kpi-ic-blue { background: var(--info-bg); color: var(--primary); }
+.kpi-ic-green { background: var(--success-bg); color: var(--success); }
+.kpi-ic-orange { background: var(--warning-bg); color: #d46b08; }
+.kpi-ic-purple { background: #f9f0ff; color: #722ed1; }
+.kpi-ic-red { background: var(--error-bg); color: var(--error); }
+.kpi-ic-gray { background: #f2f3f5; color: var(--text-2); }
+
+/* 团队卡 */
+.team-avatar { flex: none; width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), #69b1ff); color: #fff; font-size: 17px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.team-stat { background: #fafbfc; border: 1px solid var(--border-light); border-radius: 8px; padding: 9px 12px; }
+.team-stat b { font-size: 14px; }
+
 .alerts-card { padding: 14px 16px; }
 .alerts-card .at { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .alerts-card .at b { font-size: 14px; }
@@ -374,6 +426,25 @@ function toast(msg, type) {
   setTimeout(() => el.remove(), 2400);
 }
 
+/* 分页器（演示态：复用 .pager 样式；总数<=pageSize 单页，>pageSize 显示前几页+省略号） */
+function pagination(total, pageSize) {
+  pageSize = pageSize || 10;
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (total === 0) return '';
+  let nums = '';
+  for (let p = 1; p <= pages; p++) {
+    if (p <= 3 || p === pages) nums += `<span class="pg ${p === 1 ? 'on' : ''}" onclick="toast('演示环境：翻页未接入')">${p}</span>`;
+    else if (p === 4 && pages > 4) nums += `<span style="color:var(--text-3)">…</span>`;
+  }
+  return `<div class="pager">
+    <span>共 ${total} 条</span>
+    <span class="pg" onclick="toast('已是第一页（演示）')">上一页</span>
+    ${nums}
+    <span class="pg" onclick="toast('已是最后一页（演示）')">下一页</span>
+    <span class="pg">${pageSize} 条/页 ⌄</span>
+  </div>`;
+}
+
 const ICON = {
   user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>',
   lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
@@ -405,6 +476,18 @@ const ICON = {
   folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
   trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>',
   arrowDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M6 9l6 6 6-6"/></svg>',
+  grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+  question: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5v.1"/></svg>',
+  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18.5h2"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>',
+  money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12v.1M18 12v.1"/></svg>',
+  doc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>',
+  arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a2 2 0 0 1 2.8 2.8L12 14.6l-4 1 1-4z"/></svg>',
+  delete: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>',
 };
 
 /* ==================== 数据(mock, 姓名已脱敏) ==================== */
@@ -516,6 +599,99 @@ const DATA = {
     { shop: '爆伟赢日杂五金', src: '刘廷芳', no: '1907395389595', time: '2026-10-13 09:56:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22283939274121', prog: '待处理', act: '2026-10-09 04:16:22' },
     { shop: '1fb1872456517', src: '营销', no: '1907377789096', time: '2026-10-13 09:56:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 2200416999979', prog: '待处理', act: '2026-10-09 04:16:28' },
   ],
+  opsLeadTeams: [
+    { team: '花桥团队', members: 18, total: '¥960,083.78', groups: [
+      { g: '李庆组', leader: '李庆', items: [['王强', '¥13,493.51'], ['李娜', '¥9,475.71'], ['张伟', '¥7,568.18'], ['陈晨', '¥7,179.01'], ['刘洋', '¥6,270.95'], ['王芳', '¥6,168.71']] },
+      { g: '王武组', leader: '王武', items: [['赵敏', '¥19,150.34'], ['孙杰', '¥7,164.18'], ['周涛', '¥5,513.45'], ['吴磊', '¥5,456.04'], ['郑爽', '¥2,967.37'], ['冯军', '¥2,862.30']] },
+    ]},
+    { team: '曹丽元团队', members: 14, total: '¥575,545.45', groups: [
+      { g: '曹丽元组', leader: '曹丽元', items: [['许文', '¥13,109.69'], ['韩雪', '¥8,539.55'], ['沈悦', '¥7,532.72'], ['谢峰', '¥3,143.18'], ['潘婷', '¥4,383.06'], ['魏东', '¥4,040.35']] },
+      { g: '赵俊组', leader: '赵俊', items: [['朱琳', '¥1,123.20'], ['刘畅', '¥7,427.77'], ['邓超', '¥6,425.55'], ['唐磊', '¥3,460.63'], ['谭晶', '¥7,367.24'], ['田雨', '¥5,443.88']] },
+    ]},
+    { team: '李朋团队', members: 16, total: '¥555,524.44', groups: [
+      { g: '李朋组', leader: '李朋', items: [['袁磊', '¥4,651.80'], ['石磊', '¥9,327.41'], ['龚雪', '¥5,150.04'], ['侯亮', '¥4,542.27'], ['白冰', '¥4,496.12'], ['江华', '¥3,892.07']] },
+      { g: '梁伟组', leader: '梁伟', items: [['于洋', '¥2,414.89'], ['董明', '¥8,062.31'], ['余婷', '¥4,077.80'], ['叶琳', '¥3,866.02'], ['卢勇', '¥3,273.57'], ['宋佳', '¥2,336.21']] },
+    ]},
+  ],
+  opsLeadRank: [
+    ['花桥团队', '¥108,466.04', 18], ['赵俊元', '¥81,173.20', 1], ['曹丽元', '¥80,083.78', 14], ['李朋元', '¥75,545.45', 16], ['李庆团队', '¥55,524.44', 12],
+  ],
+  shops: [
+    { name: '南通五金建材店', owner: '邹建德', team: '花桥团队', status: '正常', goods: 1245, today: 4523.60, month: 125847.32, level: '4钻', auth: '已授权' },
+    { name: '宏辉商业公司店', owner: '邹建德', team: '花桥团队', status: '正常', goods: 856, today: 3120.45, month: 98234.11, level: '3钻', auth: '已授权' },
+    { name: '聚沙百货日杂店', owner: '邓泽', team: '曹丽元团队', status: '正常', goods: 2134, today: 2876.30, month: 87654.90, level: '5钻', auth: '已授权' },
+    { name: '辉荣日杂批发店', owner: '邓泽', team: '曹丽元团队', status: '限流', goods: 673, today: 1234.56, month: 45123.78, level: '2钻', auth: '已授权' },
+    { name: '信任好工厂工厂', owner: '邹建德', team: '李朋团队', status: '正常', goods: 432, today: 987.65, month: 32145.60, level: '1钻', auth: '待授权' },
+    { name: '众星五金百货店', owner: '郑泽', team: '李朋团队', status: '正常', goods: 1893, today: 3654.21, month: 112567.45, level: '4钻', auth: '已授权' },
+    { name: '圩梓壹商行店', owner: '邓泽', team: '花桥团队', status: '违规整改', goods: 234, today: 0, month: 8934.56, level: '1钻', auth: '已授权' },
+    { name: '纤萱商行橱窗店', owner: '郑泽', team: '曹丽元团队', status: '正常', goods: 756, today: 2109.87, month: 67432.10, level: '3钻', auth: '已授权' },
+  ],
+  deliveryTemplates: [
+    { name: '全国包邮', fee: '0.00', mode: '按件数', area: '全国（除偏远）', by: '邹建德', at: '2026-10-11 09:23:41' },
+    { name: '江浙沪皖包邮', fee: '0.00', mode: '按重量', area: '上海/江苏/浙江/安徽', by: '邓泽', at: '2026-10-09 14:35:12' },
+    { name: '满30元包邮', fee: '0.00', mode: '按金额', area: '全国', by: '郑泽', at: '2026-10-08 11:02:55' },
+    { name: '偏远地区加价', fee: '15.00', mode: '按件数', area: '新疆/西藏/青海/内蒙古', by: '邹建德', at: '2026-10-05 16:41:09' },
+  ],
+  dailyReport: [
+    { date: '2026-10-12', orders: 342, amount: '¥45,234.60', goods: 89, parse: 156, publish: 234, viol: 3 },
+    { date: '2026-10-11', orders: 298, amount: '¥39,876.20', goods: 76, parse: 142, publish: 198, viol: 5 },
+    { date: '2026-10-10', orders: 365, amount: '¥48,912.45', goods: 92, parse: 167, publish: 256, viol: 2 },
+    { date: '2026-10-09', orders: 276, amount: '¥35,432.80', goods: 68, parse: 128, publish: 176, viol: 4 },
+    { date: '2026-10-08', orders: 312, amount: '¥41,209.35', goods: 81, parse: 149, publish: 212, viol: 1 },
+    { date: '2026-10-07', orders: 389, amount: '¥52,143.90', goods: 105, parse: 178, publish: 289, viol: 6 },
+  ],
+  teams: [
+    { name: '花桥团队', leader: '张三', members: 18, shops: 4, month: '¥125,847.32', today: '¥4,523.60', tasks: 23, rate: '96.5%' },
+    { name: '曹丽元团队', leader: '李四', members: 14, shops: 3, month: '¥98,234.11', today: '¥3,876.30', tasks: 18, rate: '94.2%' },
+    { name: '李朋团队', leader: '王五', members: 16, shops: 3, month: '¥87,654.90', today: '¥3,120.45', tasks: 15, rate: '92.8%' },
+    { name: '赵俊元团队', leader: '赵六', members: 12, shops: 2, month: '¥67,432.10', today: '¥2,109.87', tasks: 11, rate: '90.1%' },
+  ],
+  opsTasks: [
+    { no: 'OP20261013001', type: '批量上新', shop: '南通五金建材店', total: 453, done: 312, status: '执行中', by: '邹建德', at: '2026-10-13 10:23' },
+    { no: 'OP20261013002', type: '商品改价', shop: '聚沙百货日杂店', total: 128, done: 128, status: '已完成', by: '邓泽', at: '2026-10-13 09:45' },
+    { no: 'OP20261012003', type: '链接解析', shop: '众星五金百货店', total: 56, done: 54, status: '待复核', by: '郑泽', at: '2026-10-12 18:20' },
+    { no: 'OP20261012004', type: '清理物流', shop: '宏辉商业公司店', total: 89, done: 23, status: '已暂停', by: '邹建德', at: '2026-10-12 16:10' },
+    { no: 'OP20261012005', type: '商品裂变', shop: '辉荣日杂批发店', total: 45, done: 0, status: '待执行', by: '邓泽', at: '2026-10-12 15:02' },
+    { no: 'OP20261011006', type: '批量上新', shop: '纤萱商行橱窗店', total: 210, done: 210, status: '已完成', by: '郑泽', at: '2026-10-11 14:33' },
+  ],
+  stallAudits: [
+    { no: 'SA20261013001', name: '五金工具专营', shop: '南通五金建材店', type: '新摊位申请', status: '待审核', by: '邹建德', at: '2026-10-13 10:12' },
+    { no: 'SA20261012002', name: '家居日用百货', shop: '聚沙百货日杂店', type: '摊位续期', status: '已通过', by: '邓泽', at: '2026-10-12 15:40' },
+    { no: 'SA20261012003', name: '工业软管直销', shop: '众星五金百货店', type: '新摊位申请', status: '已驳回', by: '郑泽', at: '2026-10-12 11:25' },
+    { no: 'SA20261011004', name: '厨房收纳用品', shop: '宏辉商业公司店', type: '类目变更', status: '待审核', by: '邹建德', at: '2026-10-11 09:18' },
+  ],
+  workTasks: [
+    { title: '清理物流信息异常商品', type: '运营任务', from: '张三', to: '花桥团队', status: '进行中', deadline: '2026-10-15', at: '2026-10-13 09:00' },
+    { title: '核对10月上新商品价格', type: '巡检任务', from: '李四', to: '曹丽元团队', status: '待开始', deadline: '2026-10-16', at: '2026-10-12 17:30' },
+    { title: '违禁词库10月第2周更新', type: '维护任务', from: '王五', to: '李朋团队', status: '已完成', deadline: '2026-10-12', at: '2026-10-12 10:15' },
+    { title: '新店铺授权跟进', type: '运营任务', from: '张三', to: '赵俊元团队', status: '进行中', deadline: '2026-10-14', at: '2026-10-11 14:22' },
+  ],
+  fees: [
+    { shop: '南通五金建材店', month: '2026-10', platform: '¥1,245.60', parse: '¥342.00', publish: '¥0.00', total: '¥1,587.60', status: '未结算' },
+    { shop: '聚沙百货日杂店', month: '2026-10', platform: '¥986.30', parse: '¥218.00', publish: '¥0.00', total: '¥1,204.30', status: '未结算' },
+    { shop: '众星五金百货店', month: '2026-10', platform: '¥1,532.10', parse: '¥456.00', publish: '¥12.50', total: '¥2,000.60', status: '未结算' },
+    { shop: '宏辉商业公司店', month: '2026-09', platform: '¥2,340.00', parse: '¥780.00', publish: '¥35.00', total: '¥3,155.00', status: '已结算' },
+    { shop: '辉荣日杂批发店', month: '2026-09', platform: '¥1,120.50', parse: '¥326.00', publish: '¥8.00', total: '¥1,454.50', status: '已结算' },
+  ],
+  accounts: [
+    { date: '2026-10-13 10:23', type: '解析服务扣费', amount: '-¥12.00', shop: '南通五金建材店', order: 'PAY20261013001' },
+    { date: '2026-10-13 09:15', type: '账户充值', amount: '+¥500.00', shop: '—', order: 'CZ20261013002' },
+    { date: '2026-10-12 18:40', type: '发布接口扣费', amount: '-¥3.50', shop: '众星五金百货店', order: 'PAY20261012003' },
+    { date: '2026-10-12 14:02', type: '解析服务扣费', amount: '-¥24.00', shop: '聚沙百货日杂店', order: 'PAY20261012004' },
+    { date: '2026-10-11 11:30', type: '账户充值', amount: '+¥1,000.00', shop: '—', order: 'CZ20261011005' },
+  ],
+  notices: [
+    { title: '10月第2周解析服务可用性报告', type: '系统公告', time: '2026-10-13 09:00:00', read: false },
+    { title: '您的店铺「圩梓壹商行店」授权即将到期', type: '授权提醒', time: '2026-10-12 16:20:00', read: false },
+    { title: '违禁词库已更新（新增 128 条品牌类）', type: '功能通知', time: '2026-10-12 10:05:00', read: true },
+    { title: '批量上新任务 TB20260106 已完成', type: '任务通知', time: '2026-10-13 09:07:00', read: true },
+    { title: '淘宝开放平台接口配额已刷新', type: '系统公告', time: '2026-10-11 08:00:00', read: true },
+  ],
+  feedbacks: [
+    { title: '建议支持拼多多链接解析', type: '功能建议', status: '已采纳', by: '邹建德', at: '2026-10-12 15:20', reply: '已排入 10 月迭代计划' },
+    { title: '解析仓库批量导出偶发失败', type: '问题反馈', status: '处理中', by: '邓泽', at: '2026-10-11 11:42', reply: '技术已定位，修复中' },
+    { title: '希望增加运费模板批量绑定', type: '功能建议', status: '待评估', by: '郑泽', at: '2026-10-10 09:15', reply: '' },
+  ],
 };
 /* ==================== 登录页 ==================== */
 let captcha = { a: 0, b: 0 };
@@ -599,9 +775,18 @@ function renderLogin() {
         <div class="login-err" id="lg-err"></div>
         <div class="login-opts">
           <span class="checkbox on" id="lg-remember"><span class="box"></span>记住账号</span>
-          <a href="javascript:;" onclick="toast('演示环境：忘记密码流程未接入')">忘记密码？</a>
+          <a href="#/auth/forget-password">忘记密码？</a>
         </div>
         <button class="login-btn" id="lg-submit">登 录</button>
+        <div class="login-others">
+          <span>其他登录方式</span>
+          <a href="#/auth/qrcode-login" title="扫码登录">${ICON.grid}</a>
+          <a href="#/auth/code-login" title="短信登录">${ICON.phone}</a>
+          <a href="javascript:;" title="企业微信登录" onclick="toast('演示环境：企业微信登录未接入')">${ICON.team}</a>
+        </div>
+        <div style="text-align:center;margin-top:14px;font-size:12.5px;color:var(--text-3)">
+          还没有账号？<a href="#/auth/register" style="color:var(--primary)">立即注册</a>
+        </div>
       </div>
     </div>
   </div>`;
@@ -641,37 +826,74 @@ const MENUS = [
     { t: '公司数据大屏', h: '#/company-screen' },
   ]},
   { group: '解析裂变', icon: ICON.link, items: [
-    { t: '解析仓库', h: '#/parse/repository' },
     { t: '私有分类', h: '#/parse/category' },
+    { t: '解析仓库', h: '#/parse/repository' },
   ]},
   { group: '店铺商品管理', icon: ICON.box, items: [
     { t: '店铺商品', h: '#/tb-item/shop-goods' },
     { t: '批量上新', h: '#/tb-item/publish' },
     { t: '上货模板', h: '#/tb-item/publish-template' },
     { t: '违禁词库', h: '#/tb-item/publish-blockword' },
+    { t: '运费模板', h: '#/tb-item/shop/delivery-template' },
   ]},
   { group: '店铺管理', icon: ICON.shop, items: [
-    { t: '店铺违规', h: '#/shop/violation' },
     { t: '店铺日报', h: '#/shop/daily-report' },
+    { t: '店铺列表', h: '#/shop/shop/list' },
+    { t: '店铺违规', h: '#/shop/violation' },
   ]},
-  { group: '团队管理', icon: ICON.team, items: [] },
+  { group: '团队管理', icon: ICON.team, items: [
+    { t: '运营团队', h: '#/team/op' },
+  ]},
   { group: '任务管理', icon: ICON.task, items: [
     { t: '任务派发', h: '#/optask/dispatch' },
+    { t: '运营任务', h: '#/optask/ops' },
+  ]},
+  { group: '更多功能', icon: ICON.grid, items: [
+    { t: '摊位审核', h: '#/stall-audit' },
+    { t: '工作任务', h: '#/work-task/index' },
+    { t: '数据看板', h: '#/dashboard' },
+    { t: '店铺费用', h: '#/fin/shop-fee/my' },
+    { t: '账户明细', h: '#/fin/account-detail' },
+    { t: '团队明细', h: '#/fin/group-detail' },
+    { t: '反馈建议', h: '#/feedback' },
   ]},
 ];
 
 const PAGE_META = {
   '#/company-screen': ['概览', '公司数据大屏'],
   '#/ops-lead-workspace': ['概览', '运营组长工作台'],
-  '#/parse/repository': ['解析裂变', '解析仓库'],
   '#/parse/category': ['解析裂变', '私有分类'],
+  '#/parse/repository': ['解析裂变', '解析仓库'],
   '#/tb-item/shop-goods': ['店铺商品管理', '店铺商品'],
   '#/tb-item/publish': ['店铺商品管理', '批量上新'],
   '#/tb-item/publish-template': ['店铺商品管理', '上货模板'],
   '#/tb-item/publish-blockword': ['店铺商品管理', '违禁词库'],
-  '#/shop/violation': ['店铺管理', '店铺违规'],
+  '#/tb-item/shop/delivery-template': ['店铺商品管理', '运费模板'],
   '#/shop/daily-report': ['店铺管理', '店铺日报'],
+  '#/shop/shop/list': ['店铺管理', '店铺列表'],
+  '#/shop/violation': ['店铺管理', '店铺违规'],
+  '#/shop/detail': ['店铺管理', '店铺详情'],
+  '#/shop/editor': ['店铺管理', '店铺编辑'],
+  '#/team/op': ['团队管理', '运营团队'],
+  '#/team/group-detail': ['团队管理', '团队详情'],
   '#/optask/dispatch': ['任务管理', '任务派发'],
+  '#/optask/ops': ['任务管理', '运营任务'],
+  '#/stall-audit': ['更多功能', '摊位审核'],
+  '#/work-task/index': ['更多功能', '工作任务'],
+  '#/dashboard': ['更多功能', '数据看板'],
+  '#/fin/shop-fee/my': ['更多功能', '店铺费用'],
+  '#/fin/account-detail': ['更多功能', '账户明细'],
+  '#/fin/group-detail': ['更多功能', '团队明细'],
+  '#/feedback': ['更多功能', '反馈建议'],
+  '#/notice-center': ['消息中心', '通知中心'],
+  '#/profile': ['个人中心', '个人信息'],
+  '#/help': ['帮助中心', '使用帮助'],
+  '#/auth/code-login': ['登录', '短信登录'],
+  '#/auth/qrcode-login': ['登录', '扫码登录'],
+  '#/auth/forget-password': ['登录', '忘记密码'],
+  '#/auth/register': ['登录', '注册账号'],
+  '#/forbidden': ['异常页', '403 禁止访问'],
+  '#/404': ['异常页', '404 页面不存在'],
 };
 
 let sideCollapsed = false;
@@ -708,11 +930,12 @@ function renderAdmin(pageFn) {
         <div class="crumb"><span>${meta[0]}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg><b>${meta[1]}</b></div>
         <div class="search">${ICON.search}<span>搜索</span><kbd>Ctrl K</kbd></div>
         <div class="top-actions">
-          <span class="ic" style="font-size:12px;font-weight:600">文A</span>
-          <span class="ic">${ICON.sun}</span>
-          <span class="ic"><span class="dot"></span>${ICON.bell}</span>
-          <span class="ic">${ICON.full}</span>
-          <span class="avatar">${DATA.user.initial}</span>
+          <span class="ic" id="tb-lang" title="切换语言">${ICON.lang}</span>
+          <span class="ic" id="tb-theme" title="暗黑模式">${ICON.sun}</span>
+          <span class="ic" id="tb-bell" title="通知中心"><span class="dot"></span>${ICON.bell}</span>
+          <span class="ic" id="tb-help" title="帮助中心">${ICON.question}</span>
+          <span class="ic" id="tb-full" title="全屏">${ICON.full}</span>
+          <span class="avatar" id="tb-avatar" title="个人中心">${DATA.user.initial}</span>
         </div>
       </header>
       <div class="content" id="page-body">${pageFn()}</div>
@@ -721,7 +944,20 @@ function renderAdmin(pageFn) {
   $('#tb-collapse').onclick = () => { sideCollapsed = !sideCollapsed; render(); };
   $$('.menu-item[data-g]').forEach(el => el.onclick = () => { openGroup = el.dataset.g; render(); });
   $$('.menu-item[data-h]').forEach(el => el.onclick = () => { location.hash = el.dataset.h; render(); });
-  $('.avatar').onclick = () => toast('演示环境：个人信息菜单未接入');
+  $('#tb-lang').onclick = () => toast('演示环境：仅提供简体中文');
+  $('#tb-theme').onclick = () => {
+    document.body.classList.toggle('dark');
+    const dark = document.body.classList.contains('dark');
+    $('#tb-theme').innerHTML = dark ? ICON.moon : ICON.sun;
+    toast(dark ? '已切换暗黑模式' : '已切换明亮模式');
+  };
+  $('#tb-bell').onclick = () => { location.hash = '#/notice-center'; };
+  $('#tb-help').onclick = () => { location.hash = '#/help'; };
+  $('#tb-full').onclick = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen().catch(() => toast('浏览器不支持全屏'));
+  };
+  $('#tb-avatar').onclick = () => { location.hash = '#/profile'; };
 }
 
 /* ==================== 大屏 ==================== */
@@ -975,23 +1211,51 @@ function bindParse() {
 /* ==================== 路由 ==================== */
 const PAGES = {
   '#/company-screen': pageScreen,
-  '#/parse/repository': pageParse,
+  '#/ops-lead-workspace': pageOpsLead,
   '#/parse/category': pageCategory,
+  '#/parse/repository': pageParse,
+  '#/tb-item/shop-goods': pageGoods,
   '#/tb-item/publish': pagePublish,
   '#/tb-item/publish-template': pageTemplate,
   '#/tb-item/publish-blockword': pageBlockword,
-  '#/tb-item/shop-goods': pageGoods,
-  '#/optask/dispatch': pageDispatch,
+  '#/tb-item/shop/delivery-template': pageDeliveryTemplate,
+  '#/shop/daily-report': pageDailyReport,
+  '#/shop/shop/list': pageShopList,
   '#/shop/violation': pageViolation,
-  '#/shop/daily-report': pagePlaceholder,
-  '#/ops-lead-workspace': pagePlaceholder,
+  '#/shop/detail': pageShopDetail,
+  '#/shop/editor': pageShopEditor,
+  '#/team/op': pageTeamOp,
+  '#/team/group-detail': pageTeamDetail,
+  '#/optask/dispatch': pageDispatch,
+  '#/optask/ops': pageOptaskOps,
+  '#/stall-audit': pageStallAudit,
+  '#/work-task/index': pageWorkTask,
+  '#/dashboard': pageDashboard,
+  '#/fin/shop-fee/my': pageShopFee,
+  '#/fin/account-detail': pageAccountDetail,
+  '#/fin/group-detail': pageGroupDetail,
+  '#/feedback': pageFeedback,
+  '#/notice-center': pageNotice,
+  '#/profile': pageProfile,
+  '#/help': pageHelp,
+  '#/auth/code-login': pageCodeLogin,
+  '#/auth/qrcode-login': pageQrcodeLogin,
+  '#/auth/forget-password': pageForgetPassword,
+  '#/auth/register': pageRegister,
+  '#/forbidden': pageForbidden,
+  '#/404': pageNotFound,
 };
 
 function render() {
   const hash = location.hash || '#/company-screen';
   if (hash === '#/auth/login' || hash === '' || hash === '#/') { renderLogin(); return; }
+  // 认证子页为独立全屏页（不套后台框架）
+  if (['#/auth/code-login', '#/auth/qrcode-login', '#/auth/forget-password', '#/auth/register'].includes(hash)) {
+    $('#app').innerHTML = PAGES[hash]();
+    return;
+  }
   if (!location.hash) { location.hash = '#/company-screen'; }
-  const fn = PAGES[hash] || pageScreen;
+  const fn = PAGES[hash] || pageNotFound;
   renderAdmin(fn);
   if (hash === '#/parse/repository') bindParse();
 }
@@ -1314,6 +1578,877 @@ function pagePlaceholder() {
   return `<div class="card" style="padding:60px;text-align:center;color:var(--text-3)">
     <div style="font-size:15px;margin-bottom:8px">${PAGE_META[location.hash] ? PAGE_META[location.hash][1] : '页面'}</div>
     <div style="font-size:12.5px">该页面在演示版中暂未展开，核心流程请查看「批量上新」与「解析仓库」</div>
+  </div>`;
+}
+
+/* ==================== 运营组长工作台 ==================== */
+function pageOpsLead() {
+  const topCards = [
+    ['花桥团队', '¥80,084'], ['李庆运营', '¥54,046'], ['李朋运营', '¥55,524'], ['梁伟运营', '¥25,415'],
+    ['侯丽运营', '¥108,466'], ['曹丽元', '¥75,545'], ['赵俊元', '¥81,173'], ['空余团队', '¥0'], ['二团队', '¥0'],
+  ];
+  return `
+  <div class="card" style="padding:16px 20px;margin-bottom:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:15px;font-weight:600">公司作战大屏 · 运营小组</span>
+      <span class="tag tag-orange">本日</span>
+      <span style="font-size:12px;color:var(--text-3)">数据截至 10-13 11:05:01</span>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span style="font-size:12.5px;color:var(--text-2)">2026-10-13 ~ 2026-10-13</span>
+      <button class="btn btn-default btn-sm">日</button>
+      <button class="btn btn-default btn-sm">周</button>
+      <button class="btn btn-default btn-sm">月</button>
+      <button class="btn btn-primary btn-sm">自定义</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(9,1fr);gap:10px;margin-bottom:14px">
+    ${topCards.map(([n, v]) => `
+    <div class="card" style="padding:10px 12px">
+      <div style="font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n}</div>
+      <div style="font-size:17px;font-weight:700;margin-top:4px">${v}</div>
+    </div>`).join('')}
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:14px">
+    <div>
+      ${DATA.opsLeadTeams.map(t => `
+      <div class="card" style="padding:16px 18px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <b style="font-size:14.5px">${t.team}</b>
+          <span class="tag tag-blue">${t.members} 人</span>
+          <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">团队总额</span>
+          <b style="font-size:15px">${t.total}</b>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          ${t.groups.map(g => `
+          <div style="border:1px solid var(--border-light);border-radius:8px;padding:12px 14px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <b style="font-size:13px">${g.g}</b>
+              <span style="font-size:11.5px;color:var(--text-3)">组长 ${g.leader}</span>
+            </div>
+            ${g.items.map(([n, v]) => `
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0">
+              <span>${n}</span><span style="color:var(--text-2)">${v}</span>
+            </div>`).join('')}
+          </div>`).join('')}
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="card" style="padding:16px 18px;height:fit-content">
+      <div style="display:flex;align-items:center;margin-bottom:12px">
+        <b style="font-size:14px">当月业绩排名</b>
+        <span style="margin-left:auto;font-size:11.5px;color:var(--text-3)">共 5 名</span>
+      </div>
+      ${DATA.opsLeadRank.map(([n, v, m], i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border-light)">
+        <span class="rank-badge r${i < 3 ? i + 1 : ''}">${i + 1}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n}</div>
+          <div style="font-size:11px;color:var(--text-3)">${m} 人</div>
+        </div>
+        <b style="font-size:13px">${v}</b>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+/* ==================== 店铺列表 ==================== */
+function pageShopList() {
+  const st = s => ({ '正常': 'tag-green', '限流': 'tag-orange', '违规整改': 'tag-red' }[s] || 'tag-gray');
+  return `
+  <div class="card filter-bar">
+    <span style="font-size:12.5px;color:var(--text-2)">店铺名称</span><input class="input" style="width:160px" placeholder="请输入店铺名称" />
+    <span style="font-size:12.5px;color:var(--text-2)">运营团队</span>
+    <select class="select"><option>全部团队</option><option>花桥团队</option><option>曹丽元团队</option><option>李朋团队</option></select>
+    <span style="font-size:12.5px;color:var(--text-2)">店铺状态</span>
+    <select class="select"><option>全部状态</option><option>正常</option><option>限流</option><option>违规整改</option></select>
+    <span style="font-size:12.5px;color:var(--text-2)">授权状态</span>
+    <select class="select"><option>全部</option><option>已授权</option><option>待授权</option></select>
+    <button class="btn btn-primary btn-sm">${ICON.search}查询</button>
+    <button class="btn btn-default btn-sm">重置</button>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="toast('新增店铺（演示）')">${ICON.plus}新增店铺</button>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <span style="font-size:12.5px;color:var(--text-2)">店铺授权后才能执行上新任务，授权过期需重新扫码确认</span>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 ${DATA.shops.length} 条</span>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th>店铺名称</th><th>运营团队</th><th>负责人</th><th>店铺等级</th><th>在售商品</th><th>今日营业额</th><th>本月营业额</th><th>店铺状态</th><th>授权状态</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.shops.map(s => `
+        <tr>
+          <td><b>${s.name}</b></td>
+          <td>${s.team}</td>
+          <td>${s.owner}</td>
+          <td>${s.level}</td>
+          <td>${s.goods.toLocaleString()}</td>
+          <td>¥${s.today.toLocaleString()}</td>
+          <td>¥${s.month.toLocaleString()}</td>
+          <td><span class="tag ${st(s.status)}">${s.status}</span></td>
+          <td><span class="tag ${s.auth === '已授权' ? 'tag-green' : 'tag-orange'}">${s.auth}</span></td>
+          <td>
+            <button class="btn btn-text btn-sm" onclick="location.hash='#/shop/detail'">详情</button>
+            <button class="btn btn-text btn-sm" onclick="location.hash='#/shop/editor'">编辑</button>
+            <button class="btn btn-text btn-sm" onclick="toast('重新授权（演示）')">授权</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${pagination(DATA.shops.length)}
+  </div>`;
+}
+
+/* ==================== 运费模板 ==================== */
+function pageDeliveryTemplate() {
+  return `
+  <div class="pills">
+    <span class="pill" onclick="location.hash='#/tb-item/publish'">批量上新</span><span class="pill" onclick="location.hash='#/parse/repository'">解析仓库</span><span class="pill" onclick="location.hash='#/parse/category'">私有分类</span><span class="pill on">运费模板</span><span class="pill" onclick="location.hash='#/tb-item/publish-blockword'">违禁词库</span>
+  </div>
+  <div class="card filter-bar">
+    <span style="font-size:12.5px;color:var(--text-2)">模板名称</span><input class="input" style="width:160px" placeholder="请输入模板名称" />
+    <span style="font-size:12.5px;color:var(--text-2)">计费方式</span>
+    <select class="select"><option>全部</option><option>按件数</option><option>按重量</option><option>按金额</option></select>
+    <button class="btn btn-primary btn-sm">${ICON.search}查询</button>
+    <button class="btn btn-default btn-sm">重置</button>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="toast('新增运费模板（演示）')">${ICON.plus}新增模板</button>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <span style="font-size:12px;color:var(--text-3)">运费模板用于批量上新时自动匹配物流方案，支持按店铺维度绑定</span>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 ${DATA.deliveryTemplates.length} 条</span>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th>模板名称</th><th>运费</th><th>计费方式</th><th>包邮区域</th><th>创建人</th><th>创建时间</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.deliveryTemplates.map(t => `
+        <tr>
+          <td><b>${t.name}</b></td>
+          <td>¥${t.fee}</td>
+          <td>${t.mode}</td>
+          <td style="max-width:260px">${t.area}</td>
+          <td>${t.by}</td>
+          <td style="color:var(--text-2)">${t.at}</td>
+          <td>
+            <button class="btn btn-text btn-sm" onclick="toast('编辑模板（演示）')">编辑</button>
+            <button class="btn btn-danger-text btn-sm" onclick="toast('删除需二次确认（演示）')">删除</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${pagination(DATA.deliveryTemplates.length)}
+  </div>`;
+}
+
+/* ==================== 店铺日报 ==================== */
+function pageDailyReport() {
+  return `
+  <div class="card filter-bar">
+    <span style="font-size:12.5px;color:var(--text-2)">统计日期</span>
+    <input class="input" style="width:140px" value="2026-10-01 ~ 2026-10-13" readonly />
+    <span style="font-size:12.5px;color:var(--text-2)">店铺</span>
+    <select class="select"><option>全部店铺</option><option>南通五金建材店</option><option>聚沙百货日杂店</option><option>众星五金百货店</option></select>
+    <button class="btn btn-primary btn-sm">${ICON.search}查询</button>
+    <button class="btn btn-default btn-sm" onclick="toast('导出日报（演示）')">${ICON.download}导出</button>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-blue">${ICON.trend}</div><div><div style="font-size:12px;color:var(--text-2)">周期内订单</div><div style="font-size:20px;font-weight:700">1,982 单</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-green">${ICON.money}</div><div><div style="font-size:12px;color:var(--text-2)">周期内营业额</div><div style="font-size:20px;font-weight:700">¥262,809.30</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-purple">${ICON.link}</div><div><div style="font-size:12px;color:var(--text-2)">解析商品数</div><div style="font-size:20px;font-weight:700">920 个</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-orange">${ICON.warn}</div><div><div style="font-size:12px;color:var(--text-2)">店铺违规</div><div style="font-size:20px;font-weight:700">21 次</div></div></div>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <b style="font-size:13.5px">每日经营明细</b>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 ${DATA.dailyReport.length} 条</span>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th>日期</th><th>订单数</th><th>营业额</th><th>上新商品</th><th>解析商品</th><th>发布商品</th><th>违规次数</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.dailyReport.map(d => `
+        <tr>
+          <td>${d.date}</td>
+          <td>${d.orders}</td>
+          <td><b>${d.amount}</b></td>
+          <td>${d.goods}</td>
+          <td>${d.parse}</td>
+          <td>${d.publish}</td>
+          <td><span class="tag ${d.viol > 4 ? 'tag-red' : d.viol > 2 ? 'tag-orange' : 'tag-green'}">${d.viol}</span></td>
+          <td><button class="btn btn-text btn-sm" onclick="toast('查看当日详情（演示）')">详情</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${pagination(DATA.dailyReport.length)}
+  </div>`;
+}
+
+/* ==================== 运营团队 ==================== */
+function pageTeamOp() {
+  return `
+  <div class="card filter-bar">
+    <span style="font-size:12.5px;color:var(--text-2)">团队名称</span><input class="input" style="width:160px" placeholder="请输入团队名称" />
+    <button class="btn btn-primary btn-sm">${ICON.search}查询</button>
+    <button class="btn btn-default btn-sm">重置</button>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="toast('新增团队（演示）')">${ICON.plus}新增团队</button>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+    ${DATA.teams.map(t => `
+    <div class="card" style="padding:18px 20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span class="team-avatar">${t.name[0]}</span>
+        <div>
+          <div style="font-size:14.5px;font-weight:600">${t.name}</div>
+          <div style="font-size:11.5px;color:var(--text-3)">负责人 ${t.leader}</div>
+        </div>
+        <button class="btn btn-text btn-sm" style="margin-left:auto" onclick="location.hash='#/team/group-detail'">团队详情</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div class="team-stat"><div style="font-size:11.5px;color:var(--text-3)">成员</div><b>${t.members} 人</b></div>
+        <div class="team-stat"><div style="font-size:11.5px;color:var(--text-3)">管理店铺</div><b>${t.shops} 家</b></div>
+        <div class="team-stat"><div style="font-size:11.5px;color:var(--text-3)">进行中任务</div><b>${t.tasks} 个</b></div>
+        <div class="team-stat"><div style="font-size:11.5px;color:var(--text-3)">今日营业额</div><b>${t.today}</b></div>
+        <div class="team-stat"><div style="font-size:11.5px;color:var(--text-3)">本月营业额</div><b>${t.month}</b></div>
+        <div class="team-stat"><div style="font-size:11.5px;color:var(--text-3)">任务完成率</div><b style="color:var(--success)">${t.rate}</b></div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+/* ==================== 运营任务 ==================== */
+function pageOptaskOps() {
+  const st = s => ({ '执行中': 'tag-blue', '已完成': 'tag-green', '待复核': 'tag-orange', '已暂停': 'tag-gray', '待执行': 'tag-purple' }[s] || 'tag-gray');
+  return `
+  <div class="stat-row" style="grid-template-columns:repeat(5,1fr)">
+    <div class="card stat-card"><div class="kpi-ic kpi-ic-blue">${ICON.clock}</div><div><div style="font-size:19px;font-weight:700">2</div><div style="font-size:12px;color:var(--text-2)">执行中</div></div></div>
+    <div class="card stat-card"><div class="kpi-ic kpi-ic-purple">${ICON.task}</div><div><div style="font-size:19px;font-weight:700">1</div><div style="font-size:12px;color:var(--text-2)">待执行</div></div></div>
+    <div class="card stat-card"><div class="kpi-ic kpi-ic-orange">${ICON.warn}</div><div><div style="font-size:19px;font-weight:700">1</div><div style="font-size:12px;color:var(--text-2)">待复核</div></div></div>
+    <div class="card stat-card"><div class="kpi-ic kpi-ic-green">${ICON.check}</div><div><div style="font-size:19px;font-weight:700">2</div><div style="font-size:12px;color:var(--text-2)">已完成</div></div></div>
+    <div class="card stat-card"><div class="kpi-ic kpi-ic-gray">${ICON.pause}</div><div><div style="font-size:19px;font-weight:700">1</div><div style="font-size:12px;color:var(--text-2)">已暂停</div></div></div>
+  </div>
+  <div class="card filter-bar">
+    <span style="font-size:12.5px;color:var(--text-2)">任务编号</span><input class="input" style="width:160px" placeholder="请输入任务编号" />
+    <span style="font-size:12.5px;color:var(--text-2)">任务类型</span>
+    <select class="select"><option>全部类型</option><option>批量上新</option><option>商品改价</option><option>链接解析</option><option>清理物流</option><option>商品裂变</option></select>
+    <span style="font-size:12.5px;color:var(--text-2)">状态</span>
+    <select class="select"><option>全部状态</option><option>执行中</option><option>待执行</option><option>待复核</option><option>已完成</option><option>已暂停</option></select>
+    <button class="btn btn-primary btn-sm">${ICON.search}查询</button>
+    <button class="btn btn-default btn-sm">重置</button>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <span style="font-size:12px;color:var(--text-3)">任务由「任务派发」创建，此处展示本团队执行中的运营任务</span>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 ${DATA.opsTasks.length} 条</span>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th>任务编号</th><th>任务类型</th><th>目标店铺</th><th>总量</th><th>已完成</th><th>进度</th><th>状态</th><th>执行人</th><th>创建时间</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.opsTasks.map(t => {
+          const pct = t.total ? Math.round(t.done / t.total * 100) : 0;
+          return `
+        <tr>
+          <td>${t.no}</td>
+          <td>${t.type}</td>
+          <td>${t.shop}</td>
+          <td>${t.total}</td>
+          <td>${t.done}</td>
+          <td><div style="display:flex;align-items:center;gap:8px"><div class="progress"><div style="width:${pct}%;height:100%;background:var(--primary);border-radius:3px"></div></div><span style="font-size:12px">${pct}%</span></div></td>
+          <td><span class="tag ${st(t.status)}">${t.status}</span></td>
+          <td>${t.by}</td>
+          <td style="color:var(--text-2)">${t.at}</td>
+          <td>
+            <button class="btn btn-text btn-sm" onclick="toast('查看任务日志（演示）')">日志</button>
+            ${t.status === '已暂停' ? `<button class="btn btn-text btn-sm" onclick="toast('继续任务（演示）')">继续</button>` : ''}
+            ${t.status === '执行中' ? `<button class="btn btn-text btn-sm" onclick="toast('暂停任务（演示）')">暂停</button>` : ''}
+          </td>
+        </tr>`; }).join('')}
+      </tbody>
+    </table>
+    ${pagination(DATA.opsTasks.length)}
+  </div>`;
+}
+
+/* ==================== 摊位审核 ==================== */
+function pageStallAudit() {
+  const st = s => ({ '待审核': 'tag-orange', '已通过': 'tag-green', '已驳回': 'tag-red' }[s] || 'tag-gray');
+  return `
+  <div class="card filter-bar">
+    <span style="font-size:12.5px;color:var(--text-2)">摊位名称</span><input class="input" style="width:160px" placeholder="请输入摊位名称" />
+    <span style="font-size:12.5px;color:var(--text-2)">审核状态</span>
+    <select class="select"><option>全部状态</option><option>待审核</option><option>已通过</option><option>已驳回</option></select>
+    <button class="btn btn-primary btn-sm">${ICON.search}查询</button>
+    <button class="btn btn-default btn-sm">重置</button>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <b style="font-size:13.5px">摊位入驻/变更审核</b>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 ${DATA.stallAudits.length} 条</span>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>申请编号</th><th>摊位名称</th><th>所属店铺</th><th>申请类型</th><th>状态</th><th>申请人</th><th>申请时间</th><th>操作</th></tr></thead>
+      <tbody>
+        ${DATA.stallAudits.map(a => `
+        <tr>
+          <td>${a.no}</td><td><b>${a.name}</b></td><td>${a.shop}</td><td>${a.type}</td>
+          <td><span class="tag ${st(a.status)}">${a.status}</span></td><td>${a.by}</td><td style="color:var(--text-2)">${a.at}</td>
+          <td>
+            ${a.status === '待审核' ? `
+            <button class="btn btn-text btn-sm" onclick="toast('审核通过（演示）')">通过</button>
+            <button class="btn btn-danger-text btn-sm" onclick="toast('驳回需填原因（演示）')">驳回</button>` :
+            `<button class="btn btn-text btn-sm" onclick="toast('查看审核记录（演示）')">记录</button>`}
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${pagination(DATA.stallAudits.length)}
+  </div>`;
+}
+
+/* ==================== 工作任务 ==================== */
+function pageWorkTask() {
+  const st = s => ({ '进行中': 'tag-blue', '待开始': 'tag-purple', '已完成': 'tag-green' }[s] || 'tag-gray');
+  return `
+  <div class="card filter-bar">
+    <span style="font-size:12.5px;color:var(--text-2)">任务标题</span><input class="input" style="width:180px" placeholder="请输入任务标题" />
+    <span style="font-size:12.5px;color:var(--text-2)">状态</span>
+    <select class="select"><option>全部状态</option><option>进行中</option><option>待开始</option><option>已完成</option></select>
+    <button class="btn btn-primary btn-sm">${ICON.search}查询</button>
+    <button class="btn btn-default btn-sm">重置</button>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="toast('派发工作任务（演示）')">${ICON.plus}派发任务</button>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <span style="font-size:12px;color:var(--text-3)">面向团队内部的事务性工作任务派发与跟踪</span>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 ${DATA.workTasks.length} 条</span>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>任务标题</th><th>任务类型</th><th>派发人</th><th>接收方</th><th>状态</th><th>截止日期</th><th>派发时间</th><th>操作</th></tr></thead>
+      <tbody>
+        ${DATA.workTasks.map(w => `
+        <tr>
+          <td><b>${w.title}</b></td><td>${w.type}</td><td>${w.from}</td><td>${w.to}</td>
+          <td><span class="tag ${st(w.status)}">${w.status}</span></td>
+          <td>${w.deadline}</td><td style="color:var(--text-2)">${w.at}</td>
+          <td><button class="btn btn-text btn-sm" onclick="toast('查看任务详情（演示）')">详情</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${pagination(DATA.workTasks.length)}
+  </div>`;
+}
+
+/* ==================== 数据看板 ==================== */
+function pageDashboard() {
+  const bars = [['周一', 62], ['周二', 78], ['周三', 55], ['周四', 86], ['周五', 72], ['周六', 95], ['周日', 68]];
+  const max = Math.max(...bars.map(b => b[1]));
+  return `
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-blue">${ICON.link}</div><div><div style="font-size:12px;color:var(--text-2)">本周解析商品</div><div style="font-size:20px;font-weight:700">920 个</div><div style="font-size:11px;color:var(--success)">较上周 +12.5%</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-green">${ICON.upload}</div><div><div style="font-size:12px;color:var(--text-2)">本周发布商品</div><div style="font-size:20px;font-weight:700">1,541 个</div><div style="font-size:11px;color:var(--success)">较上周 +8.3%</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-orange">${ICON.clock}</div><div><div style="font-size:12px;color:var(--text-2)">平均解析耗时</div><div style="font-size:20px;font-weight:700">3.2 秒</div><div style="font-size:11px;color:var(--success)">较上周 -0.4 秒</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-purple">${ICON.check}</div><div><div style="font-size:12px;color:var(--text-2)">解析成功率</div><div style="font-size:20px;font-weight:700">96.8%</div><div style="font-size:11px;color:var(--success)">较上周 +1.2%</div></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="card" style="padding:18px 20px">
+      <b style="font-size:14px">近 7 日解析量</b>
+      <div style="display:flex;align-items:flex-end;gap:18px;height:200px;margin-top:18px;padding:0 6px">
+        ${bars.map(([d, v]) => `
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
+          <span style="font-size:11px;color:var(--text-3)">${v}</span>
+          <div style="width:70%;max-width:34px;height:${v / max * 160}px;background:linear-gradient(180deg,var(--primary),#69b1ff);border-radius:6px 6px 2px 2px"></div>
+          <span style="font-size:11.5px;color:var(--text-2)">${d}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="card" style="padding:18px 20px">
+      <b style="font-size:14px">SKU 完整率分布</b>
+      <div style="margin-top:18px;display:flex;flex-direction:column;gap:14px">
+        ${[['完整（全部规格价格齐全）', 78, 'var(--success)'], ['部分缺失（可人工复核补齐）', 15, '#d46b08'], ['严重缺失（建议重新解析）', 7, 'var(--error)']].map(([l, v, c]) => `
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:6px"><span>${l}</span><b>${v}%</b></div>
+          <div style="height:10px;background:#f0f2f5;border-radius:5px;overflow:hidden"><div style="width:${v}%;height:100%;background:${c};border-radius:5px"></div></div>
+        </div>`).join('')}
+      </div>
+      <div style="margin-top:18px;padding:10px 12px;background:#fafbfc;border-radius:8px;font-size:12px;color:var(--text-2)">
+        统计口径：2026-10-07 ~ 2026-10-13 全店解析任务，共 920 个商品
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ==================== 店铺费用 ==================== */
+function pageShopFee() {
+  return `
+  <div class="card filter-bar">
+    <span style="font-size:12.5px;color:var(--text-2)">账期</span>
+    <select class="select"><option>2026-10</option><option>2026-09</option><option>2026-08</option></select>
+    <span style="font-size:12.5px;color:var(--text-2)">店铺</span>
+    <select class="select"><option>全部店铺</option><option>南通五金建材店</option><option>聚沙百货日杂店</option></select>
+    <span style="font-size:12.5px;color:var(--text-2)">结算状态</span>
+    <select class="select"><option>全部</option><option>未结算</option><option>已结算</option></select>
+    <button class="btn btn-primary btn-sm">${ICON.search}查询</button>
+    <button class="btn btn-default btn-sm" onclick="toast('导出费用清单（演示）')">${ICON.download}导出</button>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <b style="font-size:13.5px">店铺服务费用账单</b>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 ${DATA.fees.length} 条</span>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>店铺</th><th>账期</th><th>平台服务费</th><th>解析服务费</th><th>发布接口费</th><th>合计</th><th>结算状态</th><th>操作</th></tr></thead>
+      <tbody>
+        ${DATA.fees.map(f => `
+        <tr>
+          <td><b>${f.shop}</b></td><td>${f.month}</td><td>${f.platform}</td><td>${f.parse}</td><td>${f.publish}</td>
+          <td><b>${f.total}</b></td>
+          <td><span class="tag ${f.status === '已结算' ? 'tag-green' : 'tag-orange'}">${f.status}</span></td>
+          <td><button class="btn btn-text btn-sm" onclick="toast('查看账单明细（演示）')">明细</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${pagination(DATA.fees.length)}
+  </div>`;
+}
+
+/* ==================== 账户明细 ==================== */
+function pageAccountDetail() {
+  return `
+  <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-blue">${ICON.money}</div><div><div style="font-size:12px;color:var(--text-2)">账户余额</div><div style="font-size:20px;font-weight:700">¥3,476.00</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-orange">${ICON.trend}</div><div><div style="font-size:12px;color:var(--text-2)">本月支出</div><div style="font-size:20px;font-weight:700">¥39.50</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-green">${ICON.plus}</div><div><div style="font-size:12px;color:var(--text-2)">本月充值</div><div style="font-size:20px;font-weight:700">¥1,500.00</div></div></div>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <b style="font-size:13.5px">账户收支明细</b>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="toast('账户充值（演示）')">${ICON.plus}充值</button>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>时间</th><th>业务类型</th><th>金额</th><th>关联店铺</th><th>流水号</th></tr></thead>
+      <tbody>
+        ${DATA.accounts.map(a => `
+        <tr>
+          <td style="color:var(--text-2)">${a.date}</td><td>${a.type}</td>
+          <td><b style="color:${a.amount.startsWith('+') ? 'var(--success)' : 'var(--text)'}">${a.amount}</b></td>
+          <td>${a.shop}</td><td style="color:var(--text-2)">${a.order}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${pagination(DATA.accounts.length)}
+  </div>`;
+}
+
+/* ==================== 团队明细 ==================== */
+function pageGroupDetail() {
+  return `
+  <div class="card" style="padding:18px 20px;margin-bottom:14px;display:flex;align-items:center;gap:14px">
+    <span class="team-avatar" style="width:48px;height:48px;font-size:20px">花</span>
+    <div>
+      <div style="font-size:16px;font-weight:600">花桥团队</div>
+      <div style="font-size:12px;color:var(--text-3)">负责人 张三 · 18 名成员 · 4 家店铺</div>
+    </div>
+    <button class="btn btn-default btn-sm" style="margin-left:auto" onclick="location.hash='#/team/op'">返回团队列表</button>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-blue">${ICON.trend}</div><div><div style="font-size:12px;color:var(--text-2)">本月营业额</div><div style="font-size:19px;font-weight:700">¥125,847.32</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-green">${ICON.task}</div><div><div style="font-size:12px;color:var(--text-2)">进行中任务</div><div style="font-size:19px;font-weight:700">23 个</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-purple">${ICON.shop}</div><div><div style="font-size:12px;color:var(--text-2)">在售商品</div><div style="font-size:19px;font-weight:700">4,240 个</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-orange">${ICON.check}</div><div><div style="font-size:12px;color:var(--text-2)">任务完成率</div><div style="font-size:19px;font-weight:700">96.5%</div></div></div>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar"><b style="font-size:13.5px">成员业绩明细</b><span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 6 条</span></div>
+    <table class="tbl">
+      <thead><tr><th>成员</th><th>小组</th><th>今日营业额</th><th>本月营业额</th><th>负责店铺数</th><th>解析商品数</th></tr></thead>
+      <tbody>
+        ${[['王强', '李庆组', '¥13,493.51', '¥45,230.12', 2, 156], ['李娜', '李庆组', '¥9,475.71', '¥32,109.45', 1, 98], ['张伟', '李庆组', '¥7,568.18', '¥28,776.30', 1, 87], ['赵敏', '王武组', '¥19,150.34', '¥61,204.88', 2, 203], ['孙杰', '王武组', '¥7,164.18', '¥25,432.60', 1, 76], ['周涛', '王武组', '¥5,513.45', '¥21,876.54', 1, 64]].map(r => `
+        <tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td><b>${r[3]}</b></td><td>${r[4]}</td><td>${r[5]}</td></tr>`).join('')}
+      </tbody>
+    </table>
+    ${pagination(6)}
+  </div>`;
+}
+
+/* ==================== 反馈建议 ==================== */
+function pageFeedback() {
+  const st = s => ({ '已采纳': 'tag-green', '处理中': 'tag-blue', '待评估': 'tag-orange' }[s] || 'tag-gray');
+  return `
+  <div class="card filter-bar">
+    <span style="font-size:12.5px;color:var(--text-2)">反馈类型</span>
+    <select class="select"><option>全部类型</option><option>功能建议</option><option>问题反馈</option></select>
+    <span style="font-size:12.5px;color:var(--text-2)">处理状态</span>
+    <select class="select"><option>全部状态</option><option>待评估</option><option>处理中</option><option>已采纳</option></select>
+    <button class="btn btn-primary btn-sm">${ICON.search}查询</button>
+    <button class="btn btn-default btn-sm">重置</button>
+    <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="toast('提交反馈（演示）')">${ICON.plus}提交反馈</button>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <span style="font-size:12px;color:var(--text-3)">您的建议会直接进入产品迭代评估池</span>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 ${DATA.feedbacks.length} 条</span>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>标题</th><th>类型</th><th>状态</th><th>提交人</th><th>提交时间</th><th>官方回复</th></tr></thead>
+      <tbody>
+        ${DATA.feedbacks.map(f => `
+        <tr>
+          <td style="max-width:260px"><b>${f.title}</b></td><td>${f.type}</td>
+          <td><span class="tag ${st(f.status)}">${f.status}</span></td><td>${f.by}</td><td style="color:var(--text-2)">${f.at}</td>
+          <td style="color:var(--text-2);max-width:200px">${f.reply || '—'}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    ${pagination(DATA.feedbacks.length)}
+  </div>`;
+}
+
+window.addEventListener('hashchange', render);
+/* ==================== 店铺详情 ==================== */
+function pageShopDetail() {
+  const s = DATA.shops[0];
+  return `
+  <div class="card" style="padding:18px 20px;margin-bottom:14px;display:flex;align-items:center;gap:14px">
+    <span class="team-avatar" style="width:48px;height:48px;font-size:20px;border-radius:12px">${s.name[0]}</span>
+    <div>
+      <div style="font-size:16px;font-weight:600">${s.name} <span class="tag tag-blue">${s.level}</span></div>
+      <div style="font-size:12px;color:var(--text-3)">负责人 ${s.owner} · ${s.team} · 授权状态 ${s.auth}</div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn btn-default btn-sm" onclick="location.hash='#/shop/shop/list'">返回列表</button>
+      <button class="btn btn-primary btn-sm" onclick="location.hash='#/shop/editor'">编辑店铺</button>
+    </div>
+  </div>
+  <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-blue">${ICON.box}</div><div><div style="font-size:12px;color:var(--text-2)">在售商品</div><div style="font-size:19px;font-weight:700">${s.goods.toLocaleString()} 个</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-green">${ICON.trend}</div><div><div style="font-size:12px;color:var(--text-2)">今日营业额</div><div style="font-size:19px;font-weight:700">¥${s.today.toLocaleString()}</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-purple">${ICON.money}</div><div><div style="font-size:12px;color:var(--text-2)">本月营业额</div><div style="font-size:19px;font-weight:700">¥${s.month.toLocaleString()}</div></div></div>
+    <div class="card kpi-card"><div class="kpi-ic kpi-ic-orange">${ICON.task}</div><div><div style="font-size:12px;color:var(--text-2)">进行中任务</div><div style="font-size:19px;font-weight:700">3 个</div></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="card" style="padding:18px 20px">
+      <b style="font-size:14px">店铺基础信息</b>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px;font-size:13px">
+        ${[['店铺名称', s.name], ['运营团队', s.team], ['负责人', s.owner], ['店铺等级', s.level], ['授权状态', s.auth], ['店铺状态', s.status], ['开店时间', '2024-03-15'], ['主营类目', '五金/工具、家清、收纳']].map(([k, v]) => `
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-light)">
+          <span style="color:var(--text-2)">${k}</span><b>${v}</b>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="card tbl-card">
+      <div class="tbl-toolbar"><b style="font-size:13.5px">近期上新任务</b></div>
+      <table class="tbl">
+        <thead><tr><th>批次号</th><th>计划</th><th>进度</th><th>状态</th></tr></thead>
+        <tbody>
+          ${DATA.publishTasks.slice(0, 4).map(t => {
+            const pct = Math.round(t.progress / t.total * 100);
+            return `<tr>
+              <td>${t.no}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.plan.split('\n')[0]}</td>
+              <td><div style="display:flex;align-items:center;gap:8px"><div class="progress"><div style="width:${pct}%;height:100%;background:var(--primary);border-radius:3px"></div></div><span style="font-size:11.5px">${t.progress}/${t.total}</span></div></td>
+              <td><span class="tag ${t.status === '已完成' ? 'tag-green' : t.status === '已暂停' ? 'tag-gray' : 'tag-blue'}">${t.status}</span></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ==================== 店铺编辑 ==================== */
+function pageShopEditor() {
+  return `
+  <div class="card" style="padding:24px 28px;max-width:760px">
+    <b style="font-size:15px">编辑店铺</b>
+    <div style="margin-top:20px">
+      <div class="form-row"><label>店铺名称</label><input class="input" style="flex:1" value="南通五金建材店" /></div>
+      <div class="form-row"><label>运营团队</label>
+        <select class="select" style="flex:1"><option>花桥团队</option><option>曹丽元团队</option><option>李朋团队</option><option>赵俊元团队</option></select>
+      </div>
+      <div class="form-row"><label>负责人</label><input class="input" style="flex:1" value="邹建德" /></div>
+      <div class="form-row"><label>联系电话</label><input class="input" style="flex:1" placeholder="请输入联系电话" /></div>
+      <div class="form-row"><label>主营类目</label><input class="input" style="flex:1" value="五金/工具、家清、收纳" /></div>
+      <div class="form-row"><label>发货地址</label><input class="input" style="flex:1" placeholder="请输入默认发货地址" /></div>
+      <div class="form-row"><label>备注</label><textarea class="input" style="flex:1;height:70px;padding:8px 10px" placeholder="选填"></textarea></div>
+      <div class="form-row"><label>店铺状态</label>
+        <div style="display:flex;gap:16px;font-size:13px">
+          <label style="display:flex;align-items:center;gap:6px"><input type="radio" name="st" checked />正常</label>
+          <label style="display:flex;align-items:center;gap:6px"><input type="radio" name="st" />限流</label>
+          <label style="display:flex;align-items:center;gap:6px"><input type="radio" name="st" />暂停合作</label>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <button class="btn btn-primary" onclick="toast('保存成功（演示）')">保存修改</button>
+        <button class="btn btn-default" onclick="location.hash='#/shop/shop/list'">取消</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ==================== 通知中心 ==================== */
+function pageNotice() {
+  return `
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <b style="font-size:13.5px">通知中心</b>
+      <button class="btn btn-text btn-sm" style="margin-left:auto" onclick="toast('已全部标记为已读（演示）')">全部已读</button>
+    </div>
+    <div style="padding:8px 0">
+      ${DATA.notices.map(n => `
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border-light)">
+        ${n.read ? '' : '<span style="flex:none;width:8px;height:8px;border-radius:50%;background:var(--error)"></span>'}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13.5px;${n.read ? 'color:var(--text-2)' : 'font-weight:600'}">${n.title}</div>
+          <div style="font-size:11.5px;color:var(--text-3);margin-top:3px">${n.time}</div>
+        </div>
+        <span class="tag tag-gray">${n.type}</span>
+      </div>`).join('')}
+    </div>
+    ${pagination(DATA.notices.length)}
+  </div>`;
+}
+
+/* ==================== 个人中心 ==================== */
+function pageProfile() {
+  return `
+  <div style="display:grid;grid-template-columns:300px 1fr;gap:14px">
+    <div class="card" style="padding:28px 20px;text-align:center">
+      <span class="team-avatar" style="width:72px;height:72px;font-size:28px;margin:0 auto">张</span>
+      <div style="font-size:16px;font-weight:600;margin-top:12px">张三</div>
+      <div style="font-size:12px;color:var(--text-3);margin-top:4px">运营组长 · 花桥团队</div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;font-size:12.5px">
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">账号</span><span>liujianqi</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">手机</span><span>138****6688</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">注册时间</span><span>2025-06-18</span></div>
+      </div>
+      <button class="btn btn-default btn-sm" style="margin-top:18px;width:100%" onclick="toast('修改头像（演示）')">修改头像</button>
+    </div>
+    <div class="card" style="padding:24px 28px">
+      <b style="font-size:15px">基本资料</b>
+      <div style="margin-top:20px">
+        <div class="form-row"><label>昵称</label><input class="input" style="flex:1" value="张三" /></div>
+        <div class="form-row"><label>真实姓名</label><input class="input" style="flex:1" value="张*三" /></div>
+        <div class="form-row"><label>手机号码</label><input class="input" style="flex:1" value="13866886688" /></div>
+        <div class="form-row"><label>邮箱</label><input class="input" style="flex:1" placeholder="请输入邮箱" /></div>
+        <div class="form-row"><label>所属团队</label><input class="input" style="flex:1" value="花桥团队" disabled /></div>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button class="btn btn-primary" onclick="toast('资料已保存（演示）')">保存资料</button>
+          <button class="btn btn-default" onclick="location.hash='#/auth/forget-password'">修改密码</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ==================== 帮助中心 ==================== */
+function pageHelp() {
+  const faqs = [
+    ['如何授权我的淘宝店铺？', '进入「店铺管理 → 店铺列表」，点击对应店铺的「授权」按钮，使用店铺主账号扫码确认即可。授权有效期 30 天，过期后需重新扫码。'],
+    ['批量上新的限额是多少？', '单店每日最多创建 50 个上新任务，每月累计 600 个。可在「批量上新」页右上角查看当前店铺剩余额度。'],
+    ['解析失败的常见原因？', '链接失效、商品下架、SKU 结构特殊、目标站点反爬。解析仓库中每条任务都记录了失败原因，支持一键重试。'],
+    ['支持哪些平台的商品链接？', '目前支持淘宝、天猫、1688 商品链接；拼多多与京东链接解析已在迭代计划中。'],
+    ['上货使用什么接口？', '商品发布走淘宝开放平台官方 API（taobao.item.add / alibaba.item.publish.submit），需店铺 OAuth 授权。'],
+  ];
+  return `
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:14px">
+    <div class="card" style="padding:22px 24px">
+      <b style="font-size:15px">常见问题</b>
+      <div style="margin-top:16px">
+        ${faqs.map(([q, a], i) => `
+        <div style="border:1px solid var(--border-light);border-radius:8px;margin-bottom:10px;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:#fafbfc;cursor:pointer" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+            <span style="flex:none;width:20px;height:20px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;display:flex;align-items:center;justify-content:center">${i + 1}</span>
+            <b style="font-size:13px">${q}</b>
+            <span style="margin-left:auto;color:var(--text-3)">${ICON.arrowDown}</span>
+          </div>
+          <div style="display:${i === 0 ? 'block' : 'none'};padding:12px 14px;font-size:12.5px;color:var(--text-2);line-height:1.7">${a}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div>
+      <div class="card" style="padding:18px 20px;margin-bottom:14px">
+        <b style="font-size:14px">快速入口</b>
+        <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+          <button class="btn btn-default btn-sm" onclick="location.hash='#/tb-item/publish'">批量上新使用手册</button>
+          <button class="btn btn-default btn-sm" onclick="location.hash='#/parse/repository'">解析仓库使用手册</button>
+          <button class="btn btn-default btn-sm" onclick="location.hash='#/shop/shop/list'">店铺授权指引</button>
+          <button class="btn btn-default btn-sm" onclick="location.hash='#/feedback'">提交反馈建议</button>
+        </div>
+      </div>
+      <div class="card" style="padding:18px 20px">
+        <b style="font-size:14px">联系我们</b>
+        <div style="margin-top:12px;font-size:12.5px;color:var(--text-2);line-height:2">
+          <div>客服热线：400-000-0000</div>
+          <div>工作时间：09:00 - 21:00</div>
+          <div>商务邮箱：support@loa.example</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ==================== 短信登录 ==================== */
+function pageCodeLogin() {
+  return `
+  <div class="card" style="padding:28px;max-width:420px;margin:40px auto">
+    <b style="font-size:17px">短信登录</b>
+    <div style="font-size:12.5px;color:var(--text-3);margin-top:6px">使用手机号验证码登录（演示）</div>
+    <div class="form-row" style="margin-top:24px"><label style="width:70px">手机号</label><input class="input" style="flex:1" placeholder="请输入手机号" /></div>
+    <div class="form-row"><label style="width:70px">验证码</label>
+      <div style="flex:1;display:flex;gap:8px">
+        <input class="input" style="flex:1" placeholder="请输入验证码" />
+        <button class="btn btn-default" style="flex:none" onclick="toast('验证码已发送（演示）')">获取验证码</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="toast('短信登录成功（演示）');location.hash='#/company-screen'">登录</button>
+    <div style="text-align:center;margin-top:16px;font-size:12.5px">
+      <a href="#/auth/login" style="color:var(--primary)">返回账号密码登录</a>
+    </div>
+  </div>`;
+}
+
+/* ==================== 扫码登录 ==================== */
+function pageQrcodeLogin() {
+  let cells = '';
+  for (let i = 0; i < 21; i++) {
+    for (let j = 0; j < 21; j++) {
+      const on = (i * 7 + j * 13 + (i % 3) * 5 + (j % 5) * 3) % 3 === 0;
+      const finder = (i < 7 && j < 7) || (i < 7 && j > 13) || (i > 13 && j < 7);
+      if (finder) {
+        const fi = i % 7, fj = j % 7;
+        const ring = (fi === 0 || fi === 6 || fj === 0 || fj === 6);
+        const dot = fi >= 2 && fi <= 4 && fj >= 2 && fj <= 4;
+        cells += `<rect x="${j * 4}" y="${i * 4}" width="4" height="4" fill="${ring || dot ? '#1a1a1a' : '#fff'}"/>`;
+      } else {
+        cells += `<rect x="${j * 4}" y="${i * 4}" width="4" height="4" fill="${on ? '#1a1a1a' : '#fff'}"/>`;
+      }
+    }
+  }
+  return `
+  <div class="card" style="padding:32px;max-width:360px;margin:40px auto;text-align:center">
+    <b style="font-size:17px">扫码登录</b>
+    <div style="font-size:12.5px;color:var(--text-3);margin-top:6px">请使用 LOA App 扫描下方二维码</div>
+    <div style="margin:24px auto;width:172px;height:172px;border:1px solid var(--border);border-radius:10px;padding:8px;position:relative">
+      <svg viewBox="0 0 84 84" width="100%" height="100%" shape-rendering="crispEdges">${cells}</svg>
+      <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:36px;height:36px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.12)">
+        <span style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,var(--primary),#69b1ff);color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center">L</span>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--text-3)">二维码 5 分钟内有效</div>
+    <div style="text-align:center;margin-top:16px;font-size:12.5px">
+      <a href="#/auth/login" style="color:var(--primary)">返回账号密码登录</a>
+    </div>
+  </div>`;
+}
+
+/* ==================== 忘记密码 ==================== */
+function pageForgetPassword() {
+  return `
+  <div class="card" style="padding:28px;max-width:420px;margin:40px auto">
+    <b style="font-size:17px">忘记密码</b>
+    <div style="font-size:12.5px;color:var(--text-3);margin-top:6px">通过注册手机号重置密码（演示）</div>
+    <div class="form-row" style="margin-top:24px"><label style="width:70px">手机号</label><input class="input" style="flex:1" placeholder="请输入注册手机号" /></div>
+    <div class="form-row"><label style="width:70px">验证码</label>
+      <div style="flex:1;display:flex;gap:8px">
+        <input class="input" style="flex:1" placeholder="请输入验证码" />
+        <button class="btn btn-default" style="flex:none" onclick="toast('验证码已发送（演示）')">获取验证码</button>
+      </div>
+    </div>
+    <div class="form-row"><label style="width:70px">新密码</label><input class="input" style="flex:1" type="password" placeholder="请输入新密码（至少6位）" /></div>
+    <div class="form-row"><label style="width:70px">确认密码</label><input class="input" style="flex:1" type="password" placeholder="请再次输入新密码" /></div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="toast('密码重置成功，请重新登录（演示）');location.hash='#/auth/login'">确认重置</button>
+    <div style="text-align:center;margin-top:16px;font-size:12.5px">
+      <a href="#/auth/login" style="color:var(--primary)">返回登录</a>
+    </div>
+  </div>`;
+}
+
+/* ==================== 注册账号 ==================== */
+function pageRegister() {
+  return `
+  <div class="card" style="padding:28px;max-width:420px;margin:40px auto">
+    <b style="font-size:17px">注册账号</b>
+    <div style="font-size:12.5px;color:var(--text-3);margin-top:6px">注册 LOA 演示账号（演示环境，不会真实创建账号）</div>
+    <div class="form-row" style="margin-top:24px"><label style="width:70px">用户名</label><input class="input" style="flex:1" placeholder="请设置用户名" /></div>
+    <div class="form-row"><label style="width:70px">手机号</label><input class="input" style="flex:1" placeholder="请输入手机号" /></div>
+    <div class="form-row"><label style="width:70px">验证码</label>
+      <div style="flex:1;display:flex;gap:8px">
+        <input class="input" style="flex:1" placeholder="请输入验证码" />
+        <button class="btn btn-default" style="flex:none" onclick="toast('验证码已发送（演示）')">获取验证码</button>
+      </div>
+    </div>
+    <div class="form-row"><label style="width:70px">密码</label><input class="input" style="flex:1" type="password" placeholder="请设置密码（至少6位）" /></div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);margin:4px 0 12px">
+      <input type="checkbox" />我已阅读并同意<a href="javascript:void(0)" style="color:var(--primary)" onclick="toast('用户协议（演示）')">《用户协议》</a>和<a href="javascript:void(0)" style="color:var(--primary)" onclick="toast('隐私政策（演示）')">《隐私政策》</a>
+    </label>
+    <button class="btn btn-primary" style="width:100%" onclick="toast('注册成功，请登录（演示）');location.hash='#/auth/login'">注册</button>
+    <div style="text-align:center;margin-top:16px;font-size:12.5px">
+      已有账号？<a href="#/auth/login" style="color:var(--primary)">直接登录</a>
+    </div>
+  </div>`;
+}
+
+/* ==================== 403 / 404 ==================== */
+function pageForbidden() {
+  return `
+  <div class="card" style="padding:80px 40px;text-align:center">
+    <div style="font-size:56px;font-weight:700;color:var(--warning,#d46b08);letter-spacing:2px">403</div>
+    <div style="font-size:15px;margin-top:12px;color:var(--text-2)">抱歉，你无权访问该页面</div>
+    <div style="font-size:12.5px;color:var(--text-3);margin-top:6px">请联系管理员分配对应权限后重试</div>
+    <button class="btn btn-primary" style="margin-top:24px" onclick="location.hash='#/company-screen'">返回首页</button>
+  </div>`;
+}
+
+function pageNotFound() {
+  return `
+  <div class="card" style="padding:80px 40px;text-align:center">
+    <div style="font-size:56px;font-weight:700;color:var(--text-3);letter-spacing:2px">404</div>
+    <div style="font-size:15px;margin-top:12px;color:var(--text-2)">抱歉，你访问的页面不存在</div>
+    <div style="font-size:12.5px;color:var(--text-3);margin-top:6px">请检查地址是否正确，或返回首页继续操作</div>
+    <button class="btn btn-primary" style="margin-top:24px" onclick="location.hash='#/company-screen'">返回首页</button>
+  </div>`;
+}
+
+/* ==================== 团队详情 ==================== */
+function pageTeamDetail() {
+  return `
+  <div class="card" style="padding:18px 20px;margin-bottom:14px;display:flex;align-items:center;gap:14px">
+    <span class="team-avatar" style="width:48px;height:48px;font-size:20px">花</span>
+    <div>
+      <div style="font-size:16px;font-weight:600">花桥团队 <span class="tag tag-green">运营中</span></div>
+      <div style="font-size:12px;color:var(--text-3)">负责人 张三 · 18 名成员 · 4 家店铺 · 3 个小组</div>
+    </div>
+    <button class="btn btn-default btn-sm" style="margin-left:auto" onclick="location.hash='#/team/op'">返回团队列表</button>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    <div class="card tbl-card">
+      <div class="tbl-toolbar"><b style="font-size:13.5px">小组成员</b><span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 6 条</span></div>
+      <table class="tbl">
+        <thead><tr><th>成员</th><th>小组</th><th>今日营业额</th><th>本月营业额</th><th>负责店铺</th></tr></thead>
+        <tbody>
+          ${[['王强', '李庆组', '¥13,493.51', '¥45,230.12', '南通五金建材店'], ['李娜', '李庆组', '¥9,475.71', '¥32,109.45', '宏辉商业公司店'], ['张伟', '李庆组', '¥7,568.18', '¥28,776.30', '圩梓壹商行店'], ['赵敏', '王武组', '¥19,150.34', '¥61,204.88', '众星五金百货店'], ['孙杰', '王武组', '¥7,164.18', '¥25,432.60', '—'], ['周涛', '王武组', '¥5,513.45', '¥21,876.54', '—']].map(r => `
+          <tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td>${r[2]}</td><td><b>${r[3]}</b></td><td style="color:var(--text-2)">${r[4]}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="card tbl-card">
+      <div class="tbl-toolbar"><b style="font-size:13.5px">小组结构</b></div>
+      <div style="padding:16px 18px">
+        ${[['李庆组', '李庆', 6, '¥45,230.12'], ['王武组', '王武', 6, '¥61,204.88'], ['机动组', '张三', 6, '¥19,412.08']].map(([g, l, m, v]) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border-light)">
+          <span class="team-avatar" style="width:34px;height:34px;font-size:14px">${g[0]}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600">${g}</div>
+            <div style="font-size:11.5px;color:var(--text-3)">组长 ${l} · ${m} 人</div>
+          </div>
+          <b style="font-size:13px">${v}</b>
+        </div>`).join('')}
+      </div>
+    </div>
   </div>`;
 }
 
