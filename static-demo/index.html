@@ -1,441 +1,1325 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>淘宝自动上货系统 · 静态演示</title>
-  <style>
-    :root {
-      --primary: #409eff;
-      --primary-deep: #1d6fd6;
-      --bg: #f0f2f5;
-      --panel: #ffffff;
-      --text: #1f2329;
-      --muted: #8a919f;
-      --border: #e5e7eb;
-      --side: #1f2937;
-      --side-2: #111827;
-      --green: #18a058;
-      --orange: #f0a020;
-      --red: #d03050;
-      --blue: #2080f0;
-      --gray: #909399;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      -webkit-font-smoothing: antialiased;
-    }
-    /* ---------- 登录 ---------- */
-    #login {
-      position: fixed; inset: 0;
-      background: linear-gradient(135deg, #1f2937, #374151);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 50;
-    }
-    .login-card {
-      width: 380px; background: #fff; border-radius: 14px;
-      padding: 36px 32px; box-shadow: 0 12px 48px rgba(0,0,0,.28);
-    }
-    .login-card h2 { font-size: 22px; margin-bottom: 4px; }
-    .login-card .sub { color: var(--muted); margin-bottom: 26px; font-size: 13px; }
-    .field { margin-bottom: 16px; }
-    .field label { display:block; font-size:12px; color:var(--muted); margin-bottom:6px; }
-    .field input, .field select {
-      width: 100%; height: 40px; border: 1px solid var(--border);
-      border-radius: 8px; padding: 0 12px; font-size: 14px; outline: none;
-      transition: border-color .2s;
-    }
-    .field input:focus, .field select:focus { border-color: var(--primary); }
-    .captcha-row { display: flex; gap: 10px; }
-    .captcha-row input { flex: 1; }
-    .captcha-img {
-      width: 116px; height: 40px; border-radius: 8px; cursor: pointer;
-      background: #eef2f7; display:flex; align-items:center; justify-content:center;
-      font-weight: 700; font-size: 20px; letter-spacing: 4px; color: var(--primary-deep);
-      user-select: none; border: 1px solid var(--border);
-    }
-    .btn {
-      height: 40px; border: none; border-radius: 8px; cursor: pointer;
-      font-size: 14px; font-weight: 500; padding: 0 18px; transition: .15s;
-    }
-    .btn-primary { background: var(--primary); color: #fff; width: 100%; }
-    .btn-primary:hover { background: var(--primary-deep); }
-    .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
-    .login-tip { font-size: 12px; color: var(--gray); margin-top: 14px; text-align:center; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LOA · 淘宝自动上货系统</title>
+<style>
+:root {
+  --primary: #1677ff;
+  --primary-hover: #4096ff;
+  --primary-active: #0958d9;
+  --primary-bg: #e6f4ff;
+  --success: #52c41a;
+  --success-bg: #f6ffed;
+  --warning: #faad14;
+  --warning-bg: #fffbe6;
+  --error: #ff4d4f;
+  --error-bg: #fff2f0;
+  --info-bg: #e6f4ff;
+  --gold: #d4b106;
+  --silver: #8c9aad;
+  --bronze: #c07a3f;
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --border: #e5e8ee;
+  --border-light: #f0f2f5;
+  --text: #1f2329;
+  --text-2: #646a73;
+  --text-3: #9aa0a8;
+  --header-h: 48px;
+  --sidebar-w: 208px;
+  --sidebar-collapsed-w: 56px;
+  --radius: 6px;
+  --shadow: 0 1px 2px rgba(31, 35, 41, .04);
+  font-size: 14px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased;
+}
+a { color: var(--primary); text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+input, select, textarea { font-family: inherit; font-size: 13px; color: var(--text); outline: none; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #d0d3d9; border-radius: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
 
-    /* ---------- 主框架 ---------- */
-    #app { display: none; min-height: 100vh; }
-    .side {
-      position: fixed; top: 0; left: 0; bottom: 0; width: 220px;
-      background: var(--side); color: #cfd6e0; display: flex; flex-direction: column;
-    }
-    .logo {
-      height: 60px; display: flex; align-items: center; gap: 10px; padding: 0 20px;
-      background: var(--side-2); font-weight: 700; color: #fff; font-size: 16px;
-    }
-    .logo .dot { width: 26px; height: 26px; border-radius: 7px; background: var(--primary);
-      display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; }
-    .menu { padding: 12px 10px; flex: 1; }
-    .menu-item {
-      display: flex; align-items: center; gap: 10px; padding: 11px 14px;
-      border-radius: 8px; cursor: pointer; font-size: 14px; margin-bottom: 4px; color: #cfd6e0;
-    }
-    .menu-item:hover { background: rgba(255,255,255,.06); }
-    .menu-item.active { background: var(--primary); color: #fff; }
-    .menu-item .ic { width: 18px; text-align: center; }
-    .side-foot { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: 12px; }
-    .side-foot a { color: var(--primary); cursor: pointer; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  height: 30px; padding: 0 14px; border-radius: var(--radius);
+  font-size: 13px; transition: all .15s; white-space: nowrap;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-default { background: #fff; color: var(--text); border: 1px solid var(--border); }
+.btn-default:hover { color: var(--primary); border-color: var(--primary); }
+.btn-text { color: var(--primary); padding: 0 6px; height: 24px; }
+.btn-text:hover { background: var(--primary-bg); }
+.btn-danger-text { color: var(--error); padding: 0 6px; height: 24px; }
+.btn-danger-text:hover { background: var(--error-bg); }
+.btn-sm { height: 26px; padding: 0 10px; font-size: 12px; }
 
-    .main { margin-left: 220px; }
-    .topbar {
-      height: 60px; background: #fff; border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
-    }
-    .topbar h1 { font-size: 17px; font-weight: 600; }
-    .topbar .who { font-size: 13px; color: var(--muted); }
-    .content { padding: 22px; }
+.tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 4px; font-size: 12px; line-height: 1; }
+.tag-blue { background: var(--info-bg); color: var(--primary); }
+.tag-green { background: var(--success-bg); color: var(--success); border: 1px solid #b7eb8f; }
+.tag-orange { background: var(--warning-bg); color: #d46b08; border: 1px solid #ffd591; }
+.tag-red { background: var(--error-bg); color: var(--error); border: 1px solid #ffccc7; }
+.tag-gray { background: #f2f3f5; color: var(--text-2); }
+.tag-purple { background: #f9f0ff; color: #722ed1; border: 1px solid #d3adf7; }
 
-    /* ---------- 通用卡片 ---------- */
-    .card {
-      background: var(--panel); border: 1px solid var(--border); border-radius: 12px;
-      padding: 18px; margin-bottom: 18px;
-    }
-    .card h3 { font-size: 15px; margin-bottom: 14px; }
-    .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    .stat {
-      background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
-    }
-    .stat .label { font-size: 13px; color: var(--muted); }
-    .stat .value { font-size: 26px; font-weight: 700; margin-top: 8px; color: var(--primary); }
+.input {
+  height: 30px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: #fff; transition: border .15s; width: 100%;
+}
+.input:focus { border-color: var(--primary); }
+.input::placeholder { color: var(--text-3); }
+.select {
+  height: 30px; padding: 0 26px 0 10px; border: 1px solid var(--border); border-radius: var(--radius);
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23646a73' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+  appearance: none; cursor: pointer; min-width: 110px;
+}
+.select:focus { border-color: var(--primary); }
 
-    /* ---------- 表格 ---------- */
-    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
-    th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); }
-    th { color: var(--muted); font-weight: 600; background: #fafbfc; }
-    tbody tr:hover { background: #f7f9fc; }
+.checkbox { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-2); font-size: 13px; user-select: none; }
+.checkbox .box {
+  width: 14px; height: 14px; border: 1px solid #d0d3d9; border-radius: 3px; background: #fff;
+  display: inline-flex; align-items: center; justify-content: center; transition: all .15s; flex: none;
+}
+.checkbox.on .box { background: var(--primary); border-color: var(--primary); }
+.checkbox.on .box::after { content: ""; width: 7px; height: 4px; border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(-45deg) translate(1px, -1px); }
 
-    .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-    .b-unpublished { background: #eef2f7; color: var(--gray); }
-    .b-notdue { background: #fff4e6; color: var(--orange); }
-    .b-ready { background: #e6f4ff; color: var(--blue); }
-    .b-overdue { background: #ffe9ec; color: var(--red); }
-    .b-accepted { background: #e8f7ee; color: var(--green); }
-    .b-done { background: #e7f0ff; color: var(--primary); }
+.card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
 
-    .toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
-    .btn-sm { height: 34px; font-size: 13px; padding: 0 14px; }
-    .btn-success { background: var(--green); color: #fff; }
-    .btn-success:hover { filter: brightness(.95); }
-    .btn-ghost { background: #fff; border: 1px solid var(--border); color: var(--text); }
-    .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
-    .btn-danger { background: #fff; border: 1px solid #f5c2cb; color: var(--red); }
-    .btn-link { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 13px; padding: 2px 6px; }
-    .btn-link.danger { color: var(--red); }
+.login-wrap { display: flex; height: 100vh; overflow: hidden; }
+.login-left {
+  flex: 1.15; position: relative; display: flex; flex-direction: column;
+  background: linear-gradient(160deg, #dceafe 0%, #eaf4ff 40%, #f6faff 100%);
+}
+.login-left::before {
+  content: ""; position: absolute; inset: 0;
+  background:
+    radial-gradient(600px 400px at 15% 20%, rgba(22, 119, 255, .07), transparent 60%),
+    radial-gradient(500px 500px at 85% 80%, rgba(22, 119, 255, .05), transparent 60%);
+}
+.login-logo {
+  position: relative; display: flex; align-items: center; gap: 10px; padding: 22px 32px;
+  font-size: 17px; font-weight: 600; color: var(--text);
+}
+.login-logo .mark {
+  width: 30px; height: 30px; border-radius: 8px; flex: none;
+  background: linear-gradient(135deg, #4096ff, #0958d9);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 15px; font-weight: 700;
+  box-shadow: 0 3px 8px rgba(9, 88, 217, .3);
+}
+.login-hero { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px; }
+.login-hero .sys-title { font-size: 30px; font-weight: 600; letter-spacing: 1px; }
+.login-hero .sys-sub { font-size: 14px; color: var(--text-2); margin-top: -16px; letter-spacing: 4px; }
+.login-foot {
+  position: relative; display: flex; justify-content: space-between; padding: 20px 40px;
+  font-size: 12px; color: var(--text-3);
+}
+.login-right { width: 460px; background: #fff; display: flex; flex-direction: column; position: relative; }
+.login-theme { display: flex; gap: 14px; justify-content: flex-end; padding: 16px 24px; color: var(--text-2); }
+.login-theme svg { width: 17px; height: 17px; cursor: pointer; }
+.login-theme svg:hover { color: var(--primary); }
+.login-box { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 52px; max-width: 460px; }
+.login-box h1 { font-size: 28px; font-weight: 600; margin-bottom: 6px; }
+.login-box .tip { color: var(--text-2); font-size: 13px; margin-bottom: 30px; }
+.login-field { margin-bottom: 18px; position: relative; }
+.login-field .input { height: 38px; padding-left: 34px; }
+.login-field .ficon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); display: flex; }
+.login-field .ficon svg { width: 15px; height: 15px; }
+.login-field .eye { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--text-3); cursor: pointer; display: flex; }
+.login-field .eye svg { width: 15px; height: 15px; }
+.login-captcha-row { display: flex; gap: 10px; }
+.login-captcha-row .input { flex: 1; padding-left: 34px; }
+.captcha-img {
+  width: 116px; height: 38px; border: 1px solid var(--border); border-radius: var(--radius);
+  cursor: pointer; flex: none; background: #f7f8fa; overflow: hidden;
+}
+.captcha-img svg { display: block; }
+.login-opts { display: flex; justify-content: space-between; align-items: center; margin: 4px 0 22px; }
+.login-btn {
+  width: 100%; height: 38px; border-radius: var(--radius); background: var(--primary);
+  color: #fff; font-size: 14px; font-weight: 500; transition: background .15s;
+}
+.login-btn:hover { background: var(--primary-hover); }
+.login-err { color: var(--error); font-size: 12px; min-height: 18px; margin: -8px 0 8px; }
 
-    /* ---------- 解析 ---------- */
-    .url-bar { display: flex; max-width: 760px; }
-    .url-bar select { border: 1px solid var(--border); border-right: none; border-radius: 8px 0 0 8px; padding: 0 10px; background: #fafbfc; outline: none; }
-    .url-bar input { flex: 1; height: 40px; border: 1px solid var(--border); padding: 0 12px; outline: none; font-size: 14px; }
-    .url-bar button { border: none; background: var(--primary); color: #fff; padding: 0 22px; border-radius: 0 8px 8px 0; cursor: pointer; font-size: 14px; }
-    .url-bar button:disabled { opacity: .6; }
-    pre.json {
-      background: #0d1117; color: #c9d1d9; padding: 16px; border-radius: 8px;
-      overflow: auto; max-height: 440px; font-size: 12.5px; line-height: 1.6;
-    }
-    .kv { display:flex; gap:24px; flex-wrap: wrap; font-size:13px; color:var(--muted); margin-top:10px; }
-    .kv b { color: var(--text); }
+.admin-wrap { display: flex; height: 100vh; overflow: hidden; }
+.sidebar {
+  width: var(--sidebar-w); flex: none; background: #fff; border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; transition: width .2s;
+}
+.sidebar.collapsed { width: var(--sidebar-collapsed-w); }
+.side-logo {
+  height: var(--header-h); display: flex; align-items: center; gap: 9px; padding: 0 14px;
+  border-bottom: 1px solid var(--border); flex: none; overflow: hidden; white-space: nowrap;
+}
+.side-logo .mark {
+  width: 26px; height: 26px; border-radius: 6px; flex: none;
+  background: linear-gradient(135deg, #4096ff, #0958d9);
+  display: flex; align-items: center; justify-content: center; color: #fff; font-size: 13px; font-weight: 700;
+}
+.side-logo .name { font-size: 15px; font-weight: 600; }
+.side-menu { flex: 1; overflow-y: auto; padding: 8px 0; }
+.menu-group { margin-bottom: 2px; }
+.menu-item {
+  display: flex; align-items: center; gap: 9px; height: 38px; padding: 0 16px; margin: 1px 8px;
+  border-radius: var(--radius); color: var(--text-2); cursor: pointer; font-size: 13px;
+  white-space: nowrap; overflow: hidden; transition: all .15s; user-select: none;
+}
+.menu-item svg { width: 15px; height: 15px; flex: none; }
+.menu-item:hover { background: #f2f6ff; color: var(--primary); }
+.menu-item.on { background: var(--primary); color: #fff; }
+.menu-item .arrow { margin-left: auto; transition: transform .2s; flex: none; }
+.menu-item.open .arrow { transform: rotate(180deg); }
+.menu-sub .menu-item { height: 34px; padding-left: 40px; font-size: 12.5px; }
+.sidebar.collapsed .menu-item span, .sidebar.collapsed .menu-item .arrow { display: none; }
+.sidebar.collapsed .menu-item { justify-content: center; padding: 0; }
 
-    /* ---------- 弹窗 ---------- */
-    .mask { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: center; justify-content: center; z-index: 40; }
-    .mask.show { display: flex; }
-    .modal { width: 480px; background: #fff; border-radius: 12px; padding: 22px; }
-    .modal h3 { font-size: 16px; margin-bottom: 18px; }
-    .modal .field { margin-bottom: 14px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.topbar {
+  height: var(--header-h); background: #fff; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 14px; gap: 12px; flex: none;
+}
+.topbar .collapse-btn { color: var(--text-2); display: flex; padding: 4px; border-radius: 4px; }
+.topbar .collapse-btn:hover { background: #f2f3f5; color: var(--primary); }
+.topbar .collapse-btn svg { width: 17px; height: 17px; }
+.crumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-3); }
+.crumb b { color: var(--text); font-weight: 500; }
+.crumb svg { width: 12px; height: 12px; }
+.topbar .search {
+  margin-left: auto; display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-3); font-size: 12px; cursor: pointer;
+}
+.topbar .search:hover { border-color: var(--primary); color: var(--primary); }
+.topbar .search kbd { font-family: inherit; border: 1px solid var(--border); border-radius: 3px; padding: 0 4px; font-size: 11px; }
+.top-actions { display: flex; align-items: center; gap: 4px; color: var(--text-2); }
+.top-actions .ic {
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius); cursor: pointer; position: relative;
+}
+.top-actions .ic:hover { background: #f2f6ff; color: var(--primary); }
+.top-actions .ic svg { width: 16px; height: 16px; }
+.top-actions .dot { position: absolute; top: 5px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--error); }
+.avatar {
+  width: 28px; height: 28px; border-radius: 50%; margin-left: 4px; cursor: pointer;
+  background: linear-gradient(135deg, #69b1ff, #1677ff); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500;
+}
+.content { flex: 1; overflow-y: auto; padding: 14px 16px 24px; }
 
-    /* ---------- Toast ---------- */
-    #toast {
-      position: fixed; top: 22px; left: 50%; transform: translateX(-50%);
-      background: #2b2f36; color: #fff; padding: 11px 20px; border-radius: 8px;
-      font-size: 13.5px; z-index: 60; opacity: 0; transition: opacity .25s; pointer-events: none;
-    }
-    #toast.show { opacity: 1; }
-    .spinner { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation: spin .7s linear infinite; vertical-align:-2px; margin-right:6px; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .tag { font-size: 11px; color: var(--primary); border: 1px solid #cfe3ff; background: #f0f7ff; padding: 1px 7px; border-radius: 6px; margin-left: 8px; vertical-align: middle; }
-  </style>
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+.page-head h2 { font-size: 17px; font-weight: 600; }
+.page-head .sub { font-size: 12px; color: var(--text-3); margin-top: 5px; }
+.pills { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.pill {
+  height: 28px; padding: 0 14px; border-radius: var(--radius); font-size: 13px;
+  background: #fff; border: 1px solid var(--border); color: var(--text-2);
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+}
+.pill:hover { color: var(--primary); }
+.pill.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.pill .n { font-size: 11px; opacity: .75; }
+
+.stat-row { display: grid; grid-template-columns: repeat(8, 1fr); gap: 12px; margin-bottom: 14px; }
+.stat-card { padding: 14px 16px; display: flex; align-items: center; gap: 12px; }
+.stat-card .sic {
+  width: 38px; height: 38px; border-radius: 8px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.stat-card .sic svg { width: 19px; height: 19px; }
+.stat-card .v { font-size: 22px; font-weight: 600; line-height: 1.1; }
+.stat-card .l { font-size: 12px; color: var(--text-2); margin-top: 3px; }
+.sic.blue { background: var(--info-bg); color: var(--primary); }
+.sic.orange { background: var(--warning-bg); color: var(--warning); }
+.sic.green { background: var(--success-bg); color: var(--success); }
+.sic.red { background: var(--error-bg); color: var(--error); }
+
+.filter-bar { padding: 14px 16px; margin-bottom: 14px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.filter-bar .input { width: 180px; }
+
+.tbl-card { overflow: hidden; }
+.tbl-toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--border-light); flex-wrap: wrap; }
+table.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.tbl th {
+  background: #fafbfc; color: var(--text-2); font-weight: 500; text-align: left;
+  padding: 10px 12px; border-bottom: 1px solid var(--border-light); white-space: nowrap; font-size: 12.5px;
+}
+table.tbl td { padding: 11px 12px; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+table.tbl tbody tr:hover { background: #f8fafd; }
+.tbl-empty { padding: 40px; text-align: center; color: var(--text-3); font-size: 13px; }
+.pager { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 12px 16px; font-size: 12.5px; color: var(--text-2); }
+.pager .pg {
+  min-width: 26px; height: 26px; padding: 0 5px; border: 1px solid var(--border); border-radius: 4px;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; background: #fff;
+}
+.pager .pg:hover { color: var(--primary); border-color: var(--primary); }
+.pager .pg.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+
+.progress { width: 130px; height: 6px; background: #f0f2f5; border-radius: 3px; overflow: hidden; }
+.progress .bar { height: 100%; border-radius: 3px; background: var(--primary); }
+.progress .bar.green { background: var(--success); }
+.progress .bar.orange { background: var(--warning); }
+
+.screen-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.screen-head h2 { font-size: 18px; font-weight: 600; }
+.screen-head .clock { color: var(--text-2); font-size: 13px; font-variant-numeric: tabular-nums; }
+.screen-head .seg { display: flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: #fff; }
+.screen-head .seg span { padding: 4px 14px; font-size: 12.5px; color: var(--text-2); cursor: pointer; }
+.screen-head .seg span.on { background: var(--primary); color: #fff; }
+.screen-head .bell { margin-left: auto; position: relative; color: var(--text-2); display: flex; }
+.screen-head .bell svg { width: 18px; height: 18px; }
+.screen-head .bell .dot { position: absolute; top: -2px; right: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--error); }
+
+.kpi-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.kpi-card { padding: 16px 20px; display: flex; align-items: center; gap: 16px; }
+.kpi-card .kl { font-size: 13px; color: var(--text-2); }
+.kpi-card .kv { font-size: 30px; font-weight: 700; color: var(--primary); font-variant-numeric: tabular-nums; margin-top: 4px; }
+.kpi-card .kd { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+.kpi-card .kic { margin-left: auto; width: 46px; height: 46px; border-radius: 10px; background: var(--info-bg); color: var(--primary); display: flex; align-items: center; justify-content: center; }
+.kpi-card .kic svg { width: 22px; height: 22px; }
+
+.rank-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.rank-card { padding: 14px 16px; }
+.rank-card .rt { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.rank-card .rt b { font-size: 14px; font-weight: 600; }
+.rank-card .rt span { font-size: 11.5px; color: var(--text-3); }
+.rank-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 12.5px; }
+.rank-row .no {
+  width: 17px; height: 17px; border-radius: 50%; flex: none; font-size: 11px;
+  display: flex; align-items: center; justify-content: center; color: #fff; background: #c9ced6;
+}
+.rank-row.top1 .no { background: var(--gold); }
+.rank-row.top2 .no { background: var(--silver); }
+.rank-row.top3 .no { background: var(--bronze); }
+.rank-row .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-row .amt { color: var(--text); font-variant-numeric: tabular-nums; }
+.rank-row .rate { color: var(--success); font-size: 11px; width: 44px; text-align: right; }
+
+.alerts-card { padding: 14px 16px; }
+.alerts-card .at { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.alerts-card .at b { font-size: 14px; }
+.alerts-card .at span { font-size: 11.5px; color: var(--text-3); }
+.alert-nums { display: flex; gap: 10px; margin-bottom: 14px; }
+.alert-nums .an { flex: 1; border-radius: var(--radius); padding: 10px; text-align: center; }
+.alert-nums .an .v { font-size: 20px; font-weight: 700; }
+.alert-nums .an .l { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+.an.red { background: var(--error-bg); color: var(--error); }
+.an-blue { background: var(--info-bg); color: var(--primary); }
+.alert-list { display: flex; flex-direction: column; gap: 8px; }
+.alert-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 7px 10px; background: #fafbfc; border-radius: 4px; }
+.alert-item .lv { flex: none; width: 18px; height: 18px; border-radius: 4px; font-size: 11px; display: flex; align-items: center; justify-content: center; background: #e5e8ee; color: var(--text-2); }
+.alert-item .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); }
+.alert-item .amt { color: var(--error); font-variant-numeric: tabular-nums; }
+.alert-item .amt.zero { color: var(--text-3); }
+
+.parse-box { padding: 18px 20px; margin-bottom: 14px; }
+.parse-box .pt { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.parse-box .pt b { font-size: 15px; font-weight: 600; }
+.parse-box textarea {
+  width: 100%; min-height: 76px; border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 12px; resize: vertical; line-height: 1.6;
+}
+.parse-box textarea:focus { border-color: var(--primary); }
+.parse-hint { font-size: 12px; color: #d46b08; background: var(--warning-bg); border-radius: 4px; padding: 7px 10px; margin: 10px 0; }
+.parse-actions { display: flex; gap: 10px; margin-top: 12px; }
+.parse-log { margin-top: 12px; font-size: 12px; color: var(--text-2); font-family: Consolas, monospace; background: #fafbfc; border-radius: 4px; padding: 10px 12px; max-height: 150px; overflow-y: auto; }
+.parse-log .ok { color: var(--success); }
+
+.modal-mask { position: fixed; inset: 0; background: rgba(31, 35, 41, .45); display: flex; align-items: flex-start; justify-content: center; z-index: 100; padding-top: 12vh; }
+.modal { width: 560px; background: #fff; border-radius: 8px; box-shadow: 0 8px 28px rgba(31, 35, 41, .18); overflow: hidden; }
+.modal .mh { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border-light); }
+.modal .mh b { font-size: 15px; }
+.modal .mh .x { color: var(--text-3); font-size: 18px; cursor: pointer; line-height: 1; }
+.modal .mh .x:hover { color: var(--text); }
+.modal .mb { padding: 20px; max-height: 60vh; overflow-y: auto; }
+.modal .mf { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--border-light); }
+.form-row { display: flex; align-items: center; margin-bottom: 16px; }
+.form-row label { width: 90px; flex: none; color: var(--text-2); font-size: 13px; }
+.form-row .fg { flex: 1; }
+
+.toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  background: #fff; border-radius: var(--radius); box-shadow: 0 6px 20px rgba(31, 35, 41, .14);
+  padding: 10px 18px; font-size: 13px; display: flex; align-items: center; gap: 8px; z-index: 200;
+}
+.toast .ok { color: var(--success); }
+.toast .err { color: var(--error); }
+
+@media (max-width: 1600px) { .stat-row { grid-template-columns: repeat(4, 1fr); } .rank-grid { grid-template-columns: repeat(3, 1fr); } }
+</style>
 </head>
 <body>
-  <!-- ============ 登录 ============ -->
-  <div id="login">
-    <div class="login-card">
-      <h2>欢迎回来 👋🏻</h2>
-      <div class="sub">LOA · 淘宝自动上货（静态演示）</div>
-      <div class="field">
-        <label>用户名</label>
-        <input id="lg-user" placeholder="用户名" value="张三" />
-      </div>
-      <div class="field">
-        <label>密码</label>
-        <input id="lg-pwd" type="password" placeholder="密码" value="123456" />
-      </div>
-      <div class="field">
-        <label>验证码</label>
-        <div class="captcha-row">
-          <input id="lg-code" placeholder="验证码" />
-          <div class="captcha-img" id="lg-captcha" title="点击刷新">--</div>
-        </div>
-      </div>
-      <button class="btn btn-primary" id="lg-btn" onclick="doLogin()">登 录</button>
-      <div class="login-tip">演示环境 · 任意账号密码 + 验证码算式结果即可进入</div>
-    </div>
-  </div>
-
-  <!-- ============ 主框架 ============ -->
-  <div id="app">
-    <aside class="side">
-      <div class="logo"><span class="dot">L</span> LOA</div>
-      <nav class="menu" id="menu">
-        <div class="menu-item" data-view="dashboard"><span class="ic">📊</span> 作战大屏</div>
-        <div class="menu-item" data-view="publish"><span class="ic">📦</span> 批量上新</div>
-        <div class="menu-item" data-view="parse"><span class="ic">🔗</span> 链接解析</div>
-      </nav>
-      <div class="side-foot">
-        当前用户：<b style="color:#fff">张三</b><br />
-        <a onclick="doLogout()">退出登录</a>
-      </div>
-    </aside>
-
-    <div class="main">
-      <header class="topbar">
-        <h1 id="page-title">作战大屏</h1>
-        <div class="who">淘宝自动上货系统复刻 · 静态演示版</div>
-      </header>
-      <div class="content" id="view"></div>
-    </div>
-  </div>
-
-  <!-- ============ 弹窗 ============ -->
-  <div class="mask" id="mask">
-    <div class="modal">
-      <h3>新建上货任务</h3>
-      <div class="field"><label>批次名称</label><input id="f-batch" placeholder="例如：双11女装批次" /></div>
-      <div class="field"><label>目标店铺</label>
-        <select id="f-shop"><option>示例店铺 A</option><option>示例店铺 B</option></select></div>
-      <div class="field"><label>上货模板</label>
-        <select id="f-tpl"><option>默认模板</option><option> clothing 模板</option></select></div>
-      <div class="field"><label>执行方式</label>
-        <select id="f-mode"><option value="once">一次性</option><option value="schedule">定时持续</option></select></div>
-      <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closeModal()">取消</button>
-        <button class="btn btn-primary" style="width:auto" onclick="submitTask()">提交</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="toast"></div>
+<div id="app"></div>
 
 <script>
-  // ---------- 登录 ----------
-  function refreshCaptcha() {
-    const a = Math.floor(Math.random() * 9) + 1, b = Math.floor(Math.random() * 9) + 1;
-    window.__cap = a + b;
-    document.getElementById('lg-captcha').textContent = a + ' + ' + b + ' = ?';
-  }
-  function doLogin() {
-    const code = document.getElementById('lg-code').value.trim();
-    if (!code) return toast('请输入验证码');
-    if (parseInt(code, 10) !== window.__cap) return toast('验证码错误，请重试');
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    switchView('dashboard');
-  }
-  function doLogout() {
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('login').style.display = 'flex';
-    refreshCaptcha();
-  }
+/* ==================== 工具 ==================== */
+const $ = (s, p) => (p || document).querySelector(s);
+const $$ = (s, p) => Array.from((p || document).querySelectorAll(s));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (n) => Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const nl2br = (s) => esc(s).replace(/\n/g, '<br>');
+const now = () => new Date().toLocaleString('zh-CN', { hour12: false });
+function toast(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.innerHTML = `<span class="${type === 'err' ? 'err' : 'ok'}">${type === 'err' ? '✕' : '✓'}</span>${esc(msg)}`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2400);
+}
 
-  // ---------- 视图切换 ----------
-  const titles = { dashboard: '作战大屏', publish: '批量上新', parse: '链接解析' };
-  function switchView(v) {
-    document.querySelectorAll('.menu-item').forEach(m => m.classList.toggle('active', m.dataset.view === v));
-    document.getElementById('page-title').textContent = titles[v];
-    if (v === 'dashboard') renderDashboard();
-    if (v === 'publish') renderPublish();
-    if (v === 'parse') renderParse();
-  }
-  document.querySelectorAll('.menu-item').forEach(m => m.addEventListener('click', () => switchView(m.dataset.view)));
+const ICON = {
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
+  eye: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7.5 11-7.5S23 12 23 12s-4 7.5-11 7.5S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.9 17.9A10.4 10.4 0 0 1 12 19.5C5 19.5 1 12 1 12s3.6-6.4 9.4-7.4M23 12s-4 7.5-11 7.5c-1.4 0-2.7-.3-3.9-.7M9.9 4.2A10.9 10.9 0 0 1 12 4.5c7 0 11 7.5 11 7.5s-1.2 2.2-3.5 4.4M1 1l22 22"/></svg>',
+  menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>',
+  full: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3m13-5v3a2 2 0 0 1-2 2h-3"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  lang: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20z"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
+  up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+  down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>',
+  pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4v16l13-8z"/></svg>',
+  stop: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>',
+  refresh: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>',
+  upload: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>',
+  team: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 2.9-5.5 6.5-5.5s6.5 2 6.5 5.5"/><circle cx="17.5" cy="9" r="2.5"/><path d="M15.5 14.6c2.9-.3 6 1.3 6 5.4"/></svg>',
+  box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+  shop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l2-5h14l2 5"/><path d="M3 9v11a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V9"/><path d="M9 21v-6h6v6"/></svg>',
+  task: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4m8-4v4M8 12h8M8 16h5"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4m0 4v.1"/></svg>',
+  folder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>',
+  trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>',
+  arrowDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><path d="M6 9l6 6 6-6"/></svg>',
+};
 
-  // ---------- 数据 ----------
-  const statusMap = {
-    UNPUBLISHED: ['待发布', 'b-unpublished'],
-    NOT_DUE: ['未到期', 'b-notdue'],
-    CS_READY: ['客服就绪', 'b-ready'],
-    OVERDUE: ['已逾期', 'b-overdue'],
-    ACCEPTED: ['已受理', 'b-accepted'],
-    DONE: ['已完成', 'b-done'],
-  };
-  let tasks = [
-    { batchNo: 'TB-20261012-001', shop: '示例店铺 A', status: 'CS_READY', done: 12, total: 50 },
-    { batchNo: 'TB-20261011-014', shop: '示例店铺 B', status: 'ACCEPTED', done: 38, total: 60 },
-    { batchNo: 'TB-20261010-009', shop: '示例店铺 A', status: 'DONE', done: 50, total: 50 },
-    { batchNo: 'TB-20261012-003', shop: '示例店铺 B', status: 'OVERDUE', done: 4, total: 30 },
-    { batchNo: 'TB-20261009-021', shop: '示例店铺 A', status: 'UNPUBLISHED', done: 0, total: 45 },
-  ];
+/* ==================== 数据(mock, 姓名已脱敏) ==================== */
+const DATA = {
+  user: { name: '张三', initial: '张' },
+  kpi: [
+    { label: '本月总营业额', value: 480254.26, sub: '本月进店' },
+    { label: '今日总营业额', value: 17925.91, sub: '今日进店' },
+  ],
+  rankCustomerMonth: [
+    ['王佩', 15908.69], ['李四', 13493.51], ['刘思', 9965.91], ['赵磊', 9479.71], ['王凯', 9190.34], ['赵晓慧', 8838.53], ['彭宇航', 8875.89], ['杨圆', 8062.31], ['李晓倩', 7987.41], ['赵港', 7593.72], ['冯玉', 7578.90], ['刘瑞鑫', 7459.67], ['王旭', 7427.77], ['张慧茹', 7368.18], ['张媛媛', 7268.36],
+  ],
+  rankCustomerToday: [
+    ['赵德全', 695.20], ['彭宇航', 661.65], ['张茜茜', 590.22], ['王凯', 501.96], ['刘俊慧', 496.28], ['李梦', 426.54], ['杜运阳', 364.05], ['许泽存', 348.73], ['王凯', 340.19], ['刘欢', 338.15], ['陈梦博', 332.85], ['李志远', 302.30], ['刘志远', 301.92],
+  ],
+  rankTeamMonth: [
+    ['花桥团队', 90623.05], ['禄阳团队', 42489.19], ['耿芯蕊团队', 38653.93], ['李佳团队', 33083.64], ['无团队', 22883.68], ['张舒瑶团队', 20656.23],
+  ],
+  rankTeamToday: [
+    ['花桥团队', 5269.43], ['禄阳团队', 2516.97], ['耿芯蕊团队', 2144.35],
+  ],
+  publishStats: [
+    { v: 164, l: '等待执行', ic: 'clock', c: 'blue' },
+    { v: 0, l: '待处理', ic: 'clock', c: 'blue' },
+    { v: 0, l: '待复核', ic: 'clock', c: 'blue' },
+    { v: 0, l: '待重试中', ic: 'refresh', c: 'blue' },
+    { v: 0, l: '处理中', ic: 'play', c: 'blue' },
+    { v: 27, l: '已暂停', ic: 'pause', c: 'orange' },
+    { v: 74, l: '已完成', ic: 'check', c: 'green' },
+    { v: 101, l: '已终止', ic: 'stop', c: 'red' },
+  ],
+  publishTasks: [
+    { shop: '南通五金建材店', no: 'TB20260101', plan: '普通商品上架\n批量:20260101162219001', time: '10-14 17:05\n预计 10-23 更新完成', progress: 4, total: 453, status: '待执行', user: '邹建德', date: '2026-10-13 11:02' },
+    { shop: '宏辉商业公司店', no: 'TB20260102', plan: '家具柜子\n批量:20260101208082009', time: '10-14 16:00\n预计 10-24 更新完成', progress: 5, total: 514, status: '待执行', user: '邹建德', date: '2026-10-13 11:00' },
+    { shop: '聚沙百货日杂店', no: 'TB20260103', plan: '家居清洁工具\n批量:20260103245488504', time: '今天 10:00\n预计 10-22 更新完成', progress: 9, total: 354, status: '已暂停', user: '邹建德', date: '2026-10-13 10:46' },
+    { shop: '辉荣日杂批发店', no: 'TB20260104', plan: '厨房收纳\n批量:20260103245245586', time: '今天 09:00\n预计 10-22 更新完成', progress: 17, total: 389, status: '已暂停', user: '邹建德', date: '2026-10-13 10:42' },
+    { shop: '信任好工厂工厂', no: 'TB20260105', plan: '洗衣液瓶\n批量:20260103195633535', time: '今天 11:03\n预计 10-15 更新完成', progress: 6, total: 304, status: '待执行', user: '邹建德', date: '2026-10-13 10:39' },
+    { shop: '圩梓壹商行店', no: 'TB20260106', plan: '收纳盒\n批量:20260103096832', time: '今天 09:07\n预计 10-22 更新完成', progress: 1, total: 1, status: '已完成', user: '邓泽', date: '2026-10-13 09:07' },
+    { shop: '众星五金百货店', no: 'TB20260107', plan: '置物架\n批量:20260102181891', time: '10-12 16:20\n预计 10-19 更新完成', progress: 1, total: 1, status: '已完成', user: '邹建德', date: '2026-10-12 16:20' },
+  ],
+  parseTasks: [
+    { no: '202609130002807396', src: '解析2026-10-13 09:06:32', via: '万象', status: '已完成', prog: 100, ok: 1, skip: 1, auto: '已重试次\n纤萱商行橱', link: 'https://item.taobao.com/i', who: '导出数据包' },
+    { no: '2026090590626824034', src: '解析2026-10-12 18:20:14', via: '万象', status: '已完成', prog: 100, ok: 0, skip: 1, auto: '无上新商品\n妇幼两净中心', link: 'https://item.taobao.com/i', who: '导出数据包' },
+    { no: '2026058977308377226', src: '解析2026-10-12 18:19:22', via: '万象', status: '待解析中', prog: 0, ok: 1, skip: 0, auto: '无上新商品\n纤芯两净中心', link: 'https://item.taobao.com/i', who: '导出数据包' },
+    { no: '2026055967681566754', src: '解析2026-10-12 18:19:31', via: '万象', status: '已完成', prog: 100, ok: 1, skip: 1, auto: '已重试次\n众星五金橱窗', link: 'https://detail.1688.com/o', who: '导出数据包' },
+    { no: '20260559428615042917', src: '解析2026-10-12 18:18:56', via: '万象', status: '待解析中', prog: 0, ok: 1, skip: 1, auto: '已重试次\n众星五金橱窗', link: 'https://detail.1688.com/o', who: '导出数据包' },
+  ],
+  templates: [
+    { name: '1688-2.5倍', price: '×2.5 (加价 150%)', t1: '开', t2: '开', t3: '关', brand: '48 小时内发货', note: '', by: '邹建德', at: '2026-10-09 11:04:02' },
+    { name: '2.3倍不过直返销量', price: '×2.3 (加价 130%)', t1: '开', t2: '关', t3: '关', brand: '48 小时内发货', note: '', by: '邹建德', at: '2026-10-08 10:07:52' },
+    { name: '第1.1', price: '×1.1 (加价 10%)', t1: '开', t2: '开', t3: '关', brand: '48 小时内发货', note: '', by: '郑泽', at: '2026-09-30 15:44:10' },
+    { name: '第变1倍1', price: '×2.3 (加价 130%)', t1: '开', t2: '开', t3: '关', brand: '48 小时内发货', note: '', by: '邹建德', at: '2026-09-11 22:02:34' },
+    { name: '2.3倍上架稳稳不过不过', price: '×2.3 (加价 130%)', t1: '关', t2: '关', t3: '关', brand: '48 小时内发货', note: '', by: '邓泽', at: '2026-09-09 14:01:38' },
+    { name: '2.3倍上架模板', price: '×2.3 (加价 130%)', t1: '开', t2: '开', t3: '开', brand: '48 小时内发货', note: '', by: '薛元玮', at: '2026-09-03 14:11:31' },
+  ],
+  blockwords: [
+    { w: '水性木器清漆木器家具免白水木质木门木器家厨房日用木料', lib: '木器漆类', match: '等于', note: '不接受跨店下单发货', by: '杨熠炀', at: '2026-10-13 11:11:25' },
+    { w: '九号飞阳...东城电动骑出行两轮电动车', lib: '品牌类', match: '包含', note: '无痕，九号品牌的禁铺都没有原厂的', by: '刘彦奇', at: '2026-10-13 11:10:19' },
+    { w: '东城锂电池出行两轮电动车绿源出行', lib: '品牌类', match: '等于', note: '', by: '杨熠炀', at: '2026-10-13 10:53:11' },
+    { w: '智能新款裤机挂颤器四果防温防水沙丛安防', lib: '百货家居', match: '包含', note: '商家不私下卖', by: '闫皖江', at: '2026-10-13 10:47:14' },
+    { w: 'ESPF/星辉', lib: '品牌类', match: '包含', note: '没有授权不让卖', by: '刘天健', at: '2026-10-13 10:44:30' },
+    { w: '加厚猪揉床储物床家用小户型折叠床简易', lib: '百货家居', match: '等于', note: '', by: '刘天健', at: '2026-10-13 10:43:19' },
+    { w: '河神ROO利思骗收纳塑料盒电子', lib: '百货家居', match: '包含', note: '遗漏', by: '郑泽', at: '2026-10-13 10:38:12' },
+    { w: '跨境SD2191平扁轻金属五金工具液压刀头', lib: '五金', match: '包含', note: '', by: '张泽剑', at: '2026-10-13 10:18:12' },
+    { w: '国际比赛专用YBS飞盘增加的水沙', lib: '百货家居', match: '包含', note: '', by: '郑海燕', at: '2026-10-13 10:11:44' },
+    { w: '防水补裂健漏外堵水厕所外型渗水固型', lib: '五金', match: '包含', note: '', by: '王森', at: '2026-10-13 10:00:40' },
+    { w: '新款老虎钳凯源试测钳屏罩彩铅初', lib: '五金', match: '等于', note: '', by: '杨沂锟', at: '2026-10-13 09:49:44' },
+    { w: '价格咪头版价格特价牌价特价牌特示牌', lib: '百货家居', match: '包含', note: '', by: '张韶华', at: '2026-10-13 09:48:29' },
+    { w: '【ACFC晶花初污芳】梵高白玫瑰自画像画', lib: '百货家居', match: '等于', note: '', by: '张鑫怡', at: '2026-10-13 09:40:40' },
+    { w: 'matouch/玛尚茜', lib: '品牌类', match: '包含', note: '品牌让下架', by: '李永耀', at: '2026-10-13 09:24:09' },
+    { w: '负压冲氧真空箱外补光健漏健塑料补', lib: '五金', match: '包含', note: '不使用他人权利人', by: '程梦雪', at: '2026-10-13 09:16:29' },
+    { w: '东坡沙缸便式泡叶自动吸球', lib: '百货家居', match: '包含', note: '发布未经本人准入商品', by: '程梦雪', at: '2026-10-13 09:15:47' },
+    { w: '防碱遮阳布布驱布车布津布覆布户外用布', lib: '百货家居', match: '等于', note: '严重违规，淘宝网发布违禁信息', by: '自动同步', at: '2026-10-13 09:14:23' },
+    { w: '密空立兴', lib: '品牌类', match: '等于', note: '', by: '曲炳和', at: '2026-10-13 09:02:59' },
+  ],
+  categories: [
+    { id: 1, name: '众星', n: 0 }, { id: 2, name: '快187', n: 0 }, { id: 3, name: '橱柜', n: 0 }, { id: 4, name: '案例', n: 0 }, { id: 5, name: '影儿', n: 0 },
+    { id: 6, name: '10月快187', n: 0 }, { id: 7, name: '案例', n: 0 }, { id: 8, name: 'G10单-辅款', n: 0 }, { id: 9, name: 'G10单-运纱织店', n: 0 }, { id: 10, name: 'G10单-运纱织店', n: 0 },
+    { id: 11, name: '10月销', n: 0 }, { id: 12, name: '10月销量', n: 0 }, { id: 13, name: '江苏', n: 0 }, { id: 14, name: '配图组', n: 0 }, { id: 15, name: '10月影儿', n: 0 },
+    { id: 16, name: '10月案例4', n: 0 }, { id: 17, name: '10月accn', n: 0 }, { id: 18, name: '10月份纤', n: 0 }, { id: 19, name: '10月真减辅的', n: 0 }, { id: 20, name: 'G橱柜-新店', n: 0 },
+  ],
+  goods: [
+    { name: '抽拉式窄缝厨房收纳盒抽屉式置物架家用厨房小物件', price: '¥27.54', stock: 190, sales: '一人次', rate: '近 30 天', shop: '免费联盟', date: '2026-10-13' },
+    { name: '新款货车通用轻卡车挂车帘布防雨布耐磨加厚抗晒', price: '¥10.35', stock: 210, sales: '一人次', rate: '近 30 天', shop: '免费联盟', date: '2026-10-13' },
+    { name: '简易实木书架多层落地卧客厅实木多层置物架', price: '¥12.67', stock: 43000, sales: '一人次', rate: '近 30 天', shop: '免费联盟', date: '2026-10-13' },
+  ],
+  dispatch: [
+    { type: '店铺', shop: '宏辉商业发货店', plan: '10/12 - 10/2', no: '商品标题检查20款公开平穿不衫多款式...', status: '已完成', recv: '王春淋', by: '王春淋', done: '2026-10-12 16:26:18' },
+    { type: '店铺', shop: '纤纤商行金发店', plan: '10/12 - 10/2', no: 'PL塑料自销热斜绣有向祥初体敏天...', status: '已完成', recv: '王春淋', by: '王春淋', done: '2026-10-12 16:26:05' },
+    { type: '店铺', shop: '宏沙杂货日杂店', plan: '10/12 - 10/2', no: '标项年轻五分重补骤两件套配理...', status: '已完成', recv: '王春淋', by: '王春淋', done: '2026-10-12 16:26:05' },
+    { type: '店铺', shop: '天猫工厂旗舰店', plan: '10/12 - 10/2', no: '赢得消费拱费原中动种断术察可', status: '已完成', recv: '杨梦阳', by: '杨梦阳', done: '2026-10-12 16:26:03' },
+    { type: '补标签', shop: '宏辉商业发货店', plan: '10/12 - 10/2', no: '中货色香气盗降彩科初就玩', status: '待待待', recv: '邓泽', by: '邓泽', done: '2026-10-12 16:26:02' },
+    { type: '补标签', shop: '宏辉商业发货店', plan: '10/12 - 10/2', no: 'TC化社全资TA1据空权TA1幕初', status: '待待待', recv: '邓泽', by: '邓泽', done: '2026-10-12 16:26:02' },
+    { type: '补标签', shop: '宏沙杂货日杂店', plan: '10/12 - 10/2', no: 'bing3d五经砂式F到玩初现...', status: '待待待', recv: '郑梦阳', by: '郑梦阳', done: '2026-10-12 16:26:02' },
+    { type: '店铺', shop: '影儿工厂批发店', plan: '10/12 - 10/2', no: '偏维中型内监补用的比紧订商轻...', status: '已完成', recv: '邓泽', by: '邓泽', done: '2026-10-12 16:26:02' },
+    { type: '店铺', shop: '影儿工厂批发店', plan: '10/12 - 10', no: 'CREALTY内到漫三品已订玩初', status: '已完成', recv: '邓泽', by: '邓泽', done: '2026-10-12 16:26:00' },
+    { type: '店铺', shop: '小王工厂批发店', plan: '10/12 - 10', no: '海维款内监补用已得订商轻...', status: '已完成', recv: '邓泽', by: '邓泽', done: '2026-10-12 16:26:00' },
+  ],
+  violations: [
+    { shop: '绳旺五金杂货', src: '营销', no: '19215684707703', time: '2026-10-13 09:57:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22124812377614', prog: '待处理', act: '2026-10-09 04:26:20' },
+    { shop: '绳芯商品中心', src: '市场中心', no: '19075477878421', time: '2026-10-13 09:56:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22160296890693', prog: '待处理', act: '2026-10-09 04:44:41' },
+    { shop: '五金五批发货', src: '营销', no: '19076077732340', time: '2026-10-13 09:56:08', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22161919145903', prog: '待处理', act: '2026-10-09 04:41:11' },
+    { shop: '抽拉五金批发店', src: '王春淋', no: '19213484845771', time: '2026-10-13 09:56:08', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22226233533386', prog: '待处理', act: '2026-10-09 04:36:11' },
+    { shop: '祥胜抽柜中心', src: '王春淋', no: '19074848596533', time: '2026-10-13 09:56:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22282602203446', prog: '待处理', act: '2026-10-09 04:35:15' },
+    { shop: '天意抽柜发货', src: '王春淋', no: '19214040717277', time: '2026-10-13 09:56:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22222629383445', prog: '待处理', act: '2026-10-09 04:35:11' },
+    { shop: '澳洋华五金批发', src: '王春淋', no: '1921251284149', time: '2026-10-13 09:56:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22248948894087', prog: '待处理', act: '2026-10-09 04:51:19' },
+    { shop: '震华五批发货', src: '营销', no: '1907208996393', time: '2026-10-13 09:56:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22189947776663', prog: '待处理', act: '2026-10-09 04:52:09' },
+    { shop: '澳洋华五批发货', src: '王春淋', no: '1907765080808', time: '2026-10-13 09:56:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22226713472367', prog: '待处理', act: '2026-10-09 04:51:18' },
+    { shop: '爆伟赢日杂五金', src: '刘廷芳', no: '1907395389595', time: '2026-10-13 09:56:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 22283939274121', prog: '待处理', act: '2026-10-09 04:16:22' },
+    { shop: '1fb1872456517', src: '营销', no: '1907377789096', time: '2026-10-13 09:56:28', type: '虚假交易', lv: '一般违规', obj: '商品 ID 2200416999979', prog: '待处理', act: '2026-10-09 04:16:28' },
+  ],
+};
+/* ==================== 登录页 ==================== */
+let captcha = { a: 0, b: 0 };
+function genCaptcha() {
+  captcha.a = 2 + Math.floor(Math.random() * 8);
+  captcha.b = 1 + Math.floor(Math.random() * 8);
+  const op = captcha.a >= captcha.b ? '-' : '+';
+  captcha.op = op;
+  const colors = ['#e8393f', '#1677ff', '#1aada0', '#7a3fc4', '#d46b08'];
+  const ca = colors[Math.floor(Math.random() * colors.length)];
+  const cb = colors[Math.floor(Math.random() * colors.length)];
+  return `<svg width="116" height="38" viewBox="0 0 116 38">
+    <rect width="116" height="38" fill="#f7f8fa"/>
+    <text x="18" y="27" font-size="22" font-weight="700" fill="${ca}" font-family="Georgia">${captcha.a}</text>
+    <text x="48" y="27" font-size="20" font-weight="700" fill="${cb}" font-family="Georgia">${op}</text>
+    <text x="76" y="27" font-size="22" font-weight="700" fill="${ca}" font-family="Georgia">${captcha.b}</text>
+    <text x="98" y="27" font-size="20" font-weight="700" fill="${cb}" font-family="Georgia">=</text>
+    <text x="106" y="27" font-size="18" font-weight="700" fill="#e8393f" font-family="Georgia">?</text>
+  </svg>`;
+}
 
-  // ---------- 大屏 ----------
-  function renderDashboard() {
-    const cards = [
-      { label: '本月团队总业绩', value: '¥394,113.71' },
-      { label: '今日业绩', value: '¥16,065.68' },
-      { label: '在册客服', value: '128' },
-      { label: '团队数', value: '10' },
-    ];
-    const rank = [
-      { rank: 1, name: '李四', amount: '14,664' },
-      { rank: 2, name: '王五', amount: '14,209' },
-      { rank: 3, name: '赵六', amount: '13,161' },
-      { rank: 4, name: '钱七', amount: '11,888' },
-      { rank: 5, name: '孙八', amount: '10,540' },
-    ];
-    document.getElementById('view').innerHTML = `
-      <div class="stat-grid">
-        ${cards.map(c => `<div class="stat"><div class="label">${c.label}</div><div class="value">${c.value}</div></div>`).join('')}
+function renderLogin() {
+  $('#app').innerHTML = `
+  <div class="login-wrap">
+    <div class="login-left">
+      <div class="login-logo"><span class="mark">L</span>LOA</div>
+      <div class="login-hero">
+        <svg width="300" height="220" viewBox="0 0 300 220" fill="none">
+          <ellipse cx="150" cy="196" rx="110" ry="16" fill="#1677ff" opacity=".08"/>
+          <path d="M95 196 L150 150 L205 196 Z" fill="#1677ff" opacity=".18"/>
+          <path d="M88 196 L150 142 L212 196 Z" fill="#4096ff" opacity=".22"/>
+          <rect x="70" y="196" width="160" height="8" rx="3" fill="#1677ff" opacity=".35"/>
+          <rect x="120" y="120" width="60" height="76" rx="4" fill="#4096ff" opacity=".25"/>
+          <rect x="132" y="136" width="16" height="20" rx="2" fill="#1677ff" opacity=".5"/>
+          <rect x="156" y="136" width="16" height="20" rx="2" fill="#1677ff" opacity=".5"/>
+          <circle cx="150" cy="98" r="10" fill="#0958d9"/>
+          <path d="M144 88 q6 -14 12 0 v-14 h-12 v14" fill="#0958d9"/>
+          <rect x="140" y="108" width="20" height="16" rx="6" fill="#0958d9"/>
+          <path d="M96 120 q0 -40 30 -46" stroke="#1677ff" stroke-width="2" opacity=".4" fill="none"/>
+          <path d="M204 120 q0 -40 -30 -46" stroke="#1677ff" stroke-width="2" opacity=".4" fill="none"/>
+          <rect x="46" y="60" width="42" height="30" rx="4" fill="#69b1ff" opacity=".35"/>
+          <path d="M52 74 l8 -8 6 6 8 -10 8 12" stroke="#0958d9" stroke-width="2" fill="none" opacity=".6"/>
+          <rect x="212" y="52" width="42" height="30" rx="4" fill="#69b1ff" opacity=".35"/>
+          <path d="M218 66 l8 -8 6 6 8 -10 8 12" stroke="#0958d9" stroke-width="2" fill="none" opacity=".6"/>
+          <circle cx="238" cy="122" r="5" fill="#4096ff" opacity=".5"/>
+          <circle cx="62" cy="122" r="5" fill="#4096ff" opacity=".5"/>
+          <path d="M36 150 q14 -8 28 0" stroke="#1677ff" stroke-width="2" opacity=".3" fill="none"/>
+          <path d="M236 150 q14 -8 28 0" stroke="#1677ff" stroke-width="2" opacity=".3" fill="none"/>
+        </svg>
+        <div class="sys-title">LOA管理系统</div>
+        <div class="sys-sub">办公自动化系统</div>
       </div>
-      <div class="card">
-        <h3>本月客服排行（128 人）</h3>
-        <table>
-          <thead><tr><th>排名</th><th>客服</th><th>业绩</th></tr></thead>
-          <tbody>${rank.map(r => `<tr><td>${r.rank}</td><td>${r.name}</td><td>${r.amount}</td></tr>`).join('')}</tbody>
-        </table>
-      </div>`;
-  }
-
-  // ---------- 批量上新 ----------
-  function renderPublish() {
-    const rows = tasks.map((t, i) => {
-      const [txt, cls] = statusMap[t.status];
-      const pct = Math.round(t.done / t.total * 100);
-      return `<tr>
-        <td>${t.batchNo}</td>
-        <td>${t.shop}</td>
-        <td><span class="badge ${cls}">${txt}</span></td>
-        <td>${t.done} / ${t.total}（${pct}%）</td>
-        <td>
-          <button class="btn-link" onclick="pauseTask(${i})">暂停</button>
-          <button class="btn-link" onclick="resumeTask(${i})">继续</button>
-          <button class="btn-link danger" onclick="termTask(${i})">终止</button>
-        </td>
-      </tr>`;
-    }).join('');
-    document.getElementById('view').innerHTML = `
-      <div class="toolbar">
-        <button class="btn btn-primary btn-sm" onclick="openModal()">+ 新建上货任务</button>
-        <button class="btn btn-ghost btn-sm" onclick="renderPublish()">刷新</button>
-        <span class="tag">限额：日 50 / 月 600</span>
+      <div class="login-foot">
+        <span>备案号：冀ICP备2026003952号-1</span>
+        <span>技术支持：LOA</span>
       </div>
-      <div class="card" style="padding:0">
-        <table>
-          <thead><tr><th>批次号</th><th>目标店铺</th><th>状态</th><th>进度</th><th>操作</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`;
-  }
-  function pauseTask(i) { if (tasks[i].status !== 'DONE') { tasks[i].status = 'UNPUBLISHED'; toast('已暂停：' + tasks[i].batchNo); renderPublish(); } }
-  function resumeTask(i) { if (tasks[i].status !== 'DONE') { tasks[i].status = 'CS_READY'; toast('已继续：' + tasks[i].batchNo); renderPublish(); } }
-  function termTask(i) { tasks[i].status = 'DONE'; tasks[i].done = tasks[i].total; toast('已终止并完成：' + tasks[i].batchNo); renderPublish(); }
-
-  // ---------- 链接解析 ----------
-  function renderParse() {
-    document.getElementById('view').innerHTML = `
-      <div class="card">
-        <h3>链接解析 <span class="tag">解析执行器 ⬜ 骨架</span></h3>
-        <div class="url-bar">
-          <select id="p-plat">
-            <option value="TAOBAO">淘宝</option>
-            <option value="ALI1688">1688</option>
-            <option value="PDD">拼多多</option>
-            <option value="JD">京东</option>
-          </select>
-          <input id="p-url" placeholder="粘贴淘宝 / 1688 商品链接，例如 https://item.taobao.com/item.htm?id=..." />
-          <button id="p-btn" onclick="onParse()">解析</button>
+    </div>
+    <div class="login-right">
+      <div class="login-theme">
+        ${ICON.lang}${ICON.sun}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18" opacity=".4"/><path d="M5 5l14 14M19 5L5 19" opacity=".4"/></svg>
+      </div>
+      <div class="login-box">
+        <h1>欢迎回来 <span style="display:inline-block">👋</span></h1>
+        <div class="tip">请输入账户信息</div>
+        <div class="login-field">
+          <span class="ficon">${ICON.user}</span>
+          <input class="input" id="lg-user" placeholder="请输入用户名" value="张三" />
         </div>
-      </div>
-      <div id="p-result"></div>`;
-  }
-  function onParse() {
-    const url = document.getElementById('p-url').value.trim();
-    if (!url) return toast('请先粘贴商品链接');
-    const btn = document.getElementById('p-btn');
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>解析中';
-    setTimeout(() => {
-      btn.disabled = false; btn.textContent = '解析';
-      const plat = document.getElementById('p-plat').value;
-      const sample = buildSample(url, plat);
-      window.__last = sample;
-      document.getElementById('p-result').innerHTML = `
-        <div class="card">
-          <h3>解析结果（标准化商品 JSON）<span class="tag">ProductParseResult</span></h3>
-          <pre class="json">${JSON.stringify(sample, null, 2)}</pre>
-          <div class="kv">
-            <span>标题：<b>${sample.title}</b></span>
-            <span>价格：<b>¥${sample.price}</b></span>
-            <span>SKU数：<b>${sample.skus.length}</b></span>
-            <span>状态：<b>${sample.status}</b></span>
+        <div class="login-field">
+          <span class="ficon">${ICON.lock}</span>
+          <input class="input" id="lg-pass" type="password" placeholder="密码" />
+          <span class="eye" id="lg-eye">${ICON.eye}</span>
+        </div>
+        <div class="login-captcha-row">
+          <div class="login-field" style="flex:1;margin-bottom:0">
+            <span class="ficon">${ICON.check}</span>
+            <input class="input" id="lg-code" placeholder="验证码" />
           </div>
-          <button class="btn btn-success btn-sm" style="margin-top:14px" onclick="onPublish()">解码上货</button>
-        </div>`;
-    }, 900);
-  }
-  function buildSample(url, plat) {
-    return {
-      platform: plat,
-      sourceUrl: url,
-      parseStatus: 'SUCCESS',
-      title: '2026春季新款 女士针织开衫 慵懒风外套',
-      price: '129.00',
-      currency: 'CNY',
-      images: ['https://img.example.com/1.jpg', 'https://img.example.com/2.jpg'],
-      description: '宽松版型，亲肤面料，多色可选……',
-      skus: [
-        { skuId: 'SKU-RED-M', props: { 颜色: '红色', 尺码: 'M' }, price: '129.00', stock: 200 },
-        { skuId: 'SKU-RED-L', props: { 颜色: '红色', 尺码: 'L' }, price: '129.00', stock: 150 },
-        { skuId: 'SKU-BLK-M', props: { 颜色: '黑色', 尺码: 'M' }, price: '129.00', stock: 180 },
-      ],
-      status: 'OK',
-      parsedAt: new Date().toISOString(),
-    };
-  }
-  function onPublish() {
-    if (!window.__last) return toast('请先解析');
-    toast('已生成上货 payload（骨架，待接执行器）');
-  }
+          <div class="captcha-img" id="lg-captcha" title="点击刷新验证码">${genCaptcha()}</div>
+        </div>
+        <div class="login-err" id="lg-err"></div>
+        <div class="login-opts">
+          <span class="checkbox on" id="lg-remember"><span class="box"></span>记住账号</span>
+          <a href="javascript:;" onclick="toast('演示环境：忘记密码流程未接入')">忘记密码？</a>
+        </div>
+        <button class="login-btn" id="lg-submit">登 录</button>
+      </div>
+    </div>
+  </div>`;
+  $('#lg-captcha').onclick = () => { $('#lg-captcha').innerHTML = genCaptcha(); };
+  $('#lg-eye').onclick = () => {
+    const i = $('#lg-pass');
+    i.type = i.type === 'password' ? 'text' : 'password';
+    $('#lg-eye').innerHTML = i.type === 'password' ? ICON.eye : ICON.eyeOff;
+  };
+  $('#lg-remember').onclick = function () { this.classList.toggle('on'); };
+  const doLogin = () => {
+    const u = $('#lg-user').value.trim();
+    const p = $('#lg-pass').value;
+    const c = $('#lg-code').value.trim();
+    const ans = captcha.op === '-' ? captcha.a - captcha.b : captcha.a + captcha.b;
+    if (!u || !p) { $('#lg-err').textContent = '请输入用户名和密码'; return; }
+    if (Number(c) !== ans) {
+      $('#lg-err').textContent = '验证码错误，请重新输入';
+      $('#lg-captcha').innerHTML = genCaptcha();
+      $('#lg-code').value = '';
+      return;
+    }
+    $('#lg-err').textContent = '';
+    location.hash = '#/company-screen';
+    render();
+    toast('登录成功，欢迎回来');
+  };
+  $('#lg-submit').onclick = doLogin;
+  $('#lg-code').onkeydown = (e) => { if (e.key === 'Enter') doLogin(); };
+  $('#lg-pass').onkeydown = (e) => { if (e.key === 'Enter') doLogin(); };
+}
 
-  // ---------- 弹窗 ----------
-  function openModal() { document.getElementById('mask').classList.add('show'); }
-  function closeModal() { document.getElementById('mask').classList.remove('show'); }
-  function submitTask() {
-    const name = document.getElementById('f-batch').value.trim() || ('批次' + Date.now()).slice(-6);
-    tasks.unshift({ batchNo: 'TB-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + String(tasks.length+1).padStart(3,'0'), shop: document.getElementById('f-shop').value, status: 'UNPUBLISHED', done: 0, total: 50 });
-    closeModal(); toast('已创建任务：' + name); renderPublish();
-  }
-  document.getElementById('mask').addEventListener('click', e => { if (e.target.id === 'mask') closeModal(); });
+/* ==================== 后台框架 ==================== */
+const MENUS = [
+  { group: '概览', icon: ICON.chart, items: [
+    { t: '运营组长工作台', h: '#/ops-lead-workspace' },
+    { t: '公司数据大屏', h: '#/company-screen' },
+  ]},
+  { group: '解析裂变', icon: ICON.link, items: [
+    { t: '解析仓库', h: '#/parse/repository' },
+    { t: '私有分类', h: '#/parse/category' },
+  ]},
+  { group: '店铺商品管理', icon: ICON.box, items: [
+    { t: '店铺商品', h: '#/tb-item/shop-goods' },
+    { t: '批量上新', h: '#/tb-item/publish' },
+    { t: '上货模板', h: '#/tb-item/publish-template' },
+    { t: '违禁词库', h: '#/tb-item/publish-blockword' },
+  ]},
+  { group: '店铺管理', icon: ICON.shop, items: [
+    { t: '店铺违规', h: '#/shop/violation' },
+    { t: '店铺日报', h: '#/shop/daily-report' },
+  ]},
+  { group: '团队管理', icon: ICON.team, items: [] },
+  { group: '任务管理', icon: ICON.task, items: [
+    { t: '任务派发', h: '#/optask/dispatch' },
+  ]},
+];
 
-  // ---------- Toast ----------
-  let toastTimer;
-  function toast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
-  }
+const PAGE_META = {
+  '#/company-screen': ['概览', '公司数据大屏'],
+  '#/ops-lead-workspace': ['概览', '运营组长工作台'],
+  '#/parse/repository': ['解析裂变', '解析仓库'],
+  '#/parse/category': ['解析裂变', '私有分类'],
+  '#/tb-item/shop-goods': ['店铺商品管理', '店铺商品'],
+  '#/tb-item/publish': ['店铺商品管理', '批量上新'],
+  '#/tb-item/publish-template': ['店铺商品管理', '上货模板'],
+  '#/tb-item/publish-blockword': ['店铺商品管理', '违禁词库'],
+  '#/shop/violation': ['店铺管理', '店铺违规'],
+  '#/shop/daily-report': ['店铺管理', '店铺日报'],
+  '#/optask/dispatch': ['任务管理', '任务派发'],
+};
 
-  // init
-  refreshCaptcha();
-  document.getElementById('lg-captcha').addEventListener('click', refreshCaptcha);
+let sideCollapsed = false;
+let openGroup = '店铺商品管理';
+
+function sideHtml() {
+  let h = '';
+  for (const m of MENUS) {
+    const open = openGroup === m.group;
+    if (!m.items.length) {
+      h += `<div class="menu-item ${open ? 'open' : ''}" data-g="${m.group}">${m.icon}<span>${m.group}</span></div>`;
+      continue;
+    }
+    h += `<div class="menu-item ${open ? 'open' : ''}" data-g="${m.group}">${m.icon}<span>${m.group}</span><span class="arrow">${ICON.arrowDown}</span></div>`;
+    if (open) {
+      h += `<div class="menu-sub">${m.items.map(i =>
+        `<div class="menu-item ${location.hash === i.h ? 'on' : ''}" data-h="${i.h}"><span>${i.t}</span></div>`).join('')}</div>`;
+    }
+  }
+  return h;
+}
+
+function renderAdmin(pageFn) {
+  const meta = PAGE_META[location.hash] || ['概览', '公司数据大屏'];
+  $('#app').innerHTML = `
+  <div class="admin-wrap">
+    <aside class="sidebar ${sideCollapsed ? 'collapsed' : ''}">
+      <div class="side-logo"><span class="mark">L</span><span class="name">LOA</span></div>
+      <nav class="side-menu">${sideHtml()}</nav>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <span class="collapse-btn" id="tb-collapse">${ICON.menu}</span>
+        <div class="crumb"><span>${meta[0]}</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg><b>${meta[1]}</b></div>
+        <div class="search">${ICON.search}<span>搜索</span><kbd>Ctrl K</kbd></div>
+        <div class="top-actions">
+          <span class="ic" style="font-size:12px;font-weight:600">文A</span>
+          <span class="ic">${ICON.sun}</span>
+          <span class="ic"><span class="dot"></span>${ICON.bell}</span>
+          <span class="ic">${ICON.full}</span>
+          <span class="avatar">${DATA.user.initial}</span>
+        </div>
+      </header>
+      <div class="content" id="page-body">${pageFn()}</div>
+    </div>
+  </div>`;
+  $('#tb-collapse').onclick = () => { sideCollapsed = !sideCollapsed; render(); };
+  $$('.menu-item[data-g]').forEach(el => el.onclick = () => { openGroup = el.dataset.g; render(); });
+  $$('.menu-item[data-h]').forEach(el => el.onclick = () => { location.hash = el.dataset.h; render(); });
+  $('.avatar').onclick = () => toast('演示环境：个人信息菜单未接入');
+}
+
+/* ==================== 大屏 ==================== */
+function rankCard(title, count, list, showRate) {
+  return `<div class="card rank-card">
+    <div class="rt"><b>${title}</b><span>${count}</span></div>
+    ${list.slice(0, 15).map((r, i) => `
+      <div class="rank-row top${i + 1}">
+        <span class="no">${i + 1}</span>
+        <span class="nm">${esc(r[0])}</span>
+        <span class="amt">${fmt(r[1])}</span>
+        ${showRate ? `<span class="rate">${(1 + i * 0.7).toFixed(2)}%</span>` : ''}
+      </div>`).join('')}
+  </div>`;
+}
+
+function pageScreen() {
+  const t = setInterval(() => {
+    const c = $('#screen-clock');
+    if (c) c.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    else clearInterval(t);
+  }, 1000);
+  return `
+  <div class="screen-head">
+    <h2>公司作战大屏</h2>
+    <span class="clock" id="screen-clock">${new Date().toLocaleTimeString('zh-CN', { hour12: false })}</span>
+    <div class="seg"><span class="on">本月</span><span>上月</span></div>
+    <span class="bell">${ICON.bell}<span class="dot"></span></span>
+  </div>
+  <div class="kpi-row">
+    ${DATA.kpi.map(k => `
+    <div class="card kpi-card">
+      <div><div class="kl">${k.label}</div><div class="kv">¥${fmt(k.value)}</div><div class="kd">${k.sub}</div></div>
+      <div class="kic">${ICON.trend}</div>
+    </div>`).join('')}
+  </div>
+  <div class="rank-grid">
+    ${rankCard('本月客服排行', '共 124 人', DATA.rankCustomerMonth, true)}
+    ${rankCard('今日客服排行', '共 124 人', DATA.rankCustomerToday, true)}
+    ${rankCard('本月团队排行', '共 10 个团队', DATA.rankTeamMonth, true)}
+    ${rankCard('今日团队排行', '共 10 个团队', DATA.rankTeamToday, true)}
+    <div class="card alerts-card">
+      <div class="at">${ICON.warn}<b>本月业绩未警示</b><span>倒计 10</span></div>
+      <div class="alert-nums">
+        <div class="an red"><div class="v">109</div><div class="l">张少琴 2</div></div>
+        <div class="an red"><div class="v">-53.55</div><div class="l">徐英达 002</div></div>
+        <div class="an red"><div class="v">124</div><div class="l">张少琴 2</div></div>
+      </div>
+      <div class="alert-list">
+        ${[['110', '京0408', '0.00'], ['110', '京0401', '0.00'], ['110', '张柏玥003', '0.00'], ['110', '张帮005', '0.00'], ['110', '京0409', '0.00'], ['110', '京010', '0.00']]
+          .map(r => `<div class="alert-item"><span class="lv">${r[0]}</span><span class="nm">${r[1]}</span><span class="amt zero">${r[2]}</span></div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+/* ==================== 批量上新 ==================== */
+const PUB_STATUS = { '待执行': 'tag-blue', '已暂停': 'tag-orange', '已完成': 'tag-green', '已终止': 'tag-red', '处理中': 'tag-blue' };
+
+function pagePublish() {
+  return `
+  <div class="page-head">
+    <div><h2>批量上新任务</h2><div class="sub">新增开单增量批量上新上新，实时掌握执行进度</div></div>
+    <button class="btn btn-default btn-sm" onclick="toast('已刷新')">${ICON.refresh}刷新</button>
+  </div>
+  <div class="pills">
+    <span class="pill on">批量管理</span><span class="pill">上新统计</span>
+  </div>
+  <div class="stat-row">
+    ${DATA.publishStats.map(s => `
+    <div class="card stat-card">
+      <div class="sic ${s.c}">${ICON[s.ic]}</div>
+      <div><div class="v">${s.v}</div><div class="l">${s.l}</div></div>
+    </div>`).join('')}
+  </div>
+  <div class="card filter-bar">
+    <select class="select"><option>全部店铺</option></select>
+    <input class="input" placeholder="批次号、批次名、输几个字段搜索" />
+    <select class="select"><option>全部发布人</option></select>
+    <select class="select"><option>全部类型</option></select>
+    <input class="input" style="width:150px" placeholder="执行日期起" />
+    <span style="color:var(--text-3)">~</span>
+    <input class="input" style="width:150px" placeholder="执行日期止" />
+    <button class="btn btn-primary btn-sm">查询</button>
+    <button class="btn btn-default btn-sm">重置</button>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <button class="btn btn-primary btn-sm" onclick="openNewTaskModal()">${ICON.plus}新建上货任务</button>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">已选中 187 条 · 最新发布</span>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr>
+        <th style="width:36px"><span class="checkbox"><span class="box"></span></span></th>
+        <th>任务</th><th>店铺 / 店群</th><th>待发布人</th><th>任务</th><th>执行计划</th><th>进度</th><th>状态</th><th>发布人</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.publishTasks.map((t, i) => `
+        <tr>
+          <td><span class="checkbox"><span class="box"></span></span></td>
+          <td style="color:var(--primary);cursor:pointer">${t.no}</td>
+          <td><a href="javascript:;" onclick="toast('店铺详情：${t.shop}')">${t.shop}</a></td>
+          <td><button class="btn btn-text btn-sm">待发布</button></td>
+          <td style="max-width:180px">${nl2br(t.plan)}</td>
+          <td style="max-width:150px;color:var(--text-2)">${nl2br(t.time)}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="progress"><div class="bar ${t.status === '已完成' ? 'green' : t.status === '已暂停' ? 'orange' : ''}" style="width:${Math.min(100, t.progress * 100 / Math.max(t.total, 1))}%"></div></div>
+              <span style="color:var(--text-2);font-size:12px">${t.progress} / ${t.total}</span>
+            </div>
+          </td>
+          <td><span class="tag ${PUB_STATUS[t.status]}">${t.status}</span></td>
+          <td style="color:var(--text-2)">${t.user}<br><span style="font-size:11.5px;color:var(--text-3)">${t.date}</span></td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-text btn-sm" onclick="toast('任务详情 ${t.no}')">详情</button>
+            <button class="btn btn-text btn-sm" onclick="toast('编辑 ${t.no}')">编辑</button>
+            ${t.status === '待执行' ? `<button class="btn btn-text btn-sm" onclick="toast('已暂停 ${t.no}')">暂停</button>` : ''}
+            ${t.status === '已暂停' ? `<button class="btn btn-text btn-sm" onclick="toast('已继续 ${t.no}')">继续</button>` : ''}
+            <button class="btn btn-danger-text btn-sm" onclick="toast('已终止 ${t.no}')">终止</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div class="pager">
+      <span>共 187 条</span>
+      <span class="pg on">1</span><span class="pg">2</span><span class="pg">3</span><span class="pg">…</span><span class="pg">19</span><span class="pg">›</span><span class="pg">20 条/页 ⌄</span>
+    </div>
+  </div>`;
+}
+
+function openNewTaskModal() {
+  const mask = document.createElement('div');
+  mask.className = 'modal-mask';
+  mask.innerHTML = `
+  <div class="modal">
+    <div class="mh"><b>新建上货任务</b><span class="x">✕</span></div>
+    <div class="mb">
+      <div class="form-row"><label>任务名称</label><div class="fg"><input class="input" placeholder="请输入任务名称" /></div></div>
+      <div class="form-row"><label>目标店铺</label><div class="fg"><select class="select" style="width:100%"><option>南通五金建材店</option><option>宏辉商业公司店</option><option>聚沙百货日杂店</option></select></div></div>
+      <div class="form-row"><label>商品来源</label><div class="fg"><select class="select" style="width:100%"><option>解析仓库（已解析商品）</option><option>粘贴链接新建</option></select></div></div>
+      <div class="form-row"><label>上货模板</label><div class="fg"><select class="select" style="width:100%"><option>2.3倍上架模板</option><option>1688-2.5倍</option></select></div></div>
+      <div class="form-row"><label>执行计划</label><div class="fg"><input class="input" placeholder="立即执行 / 定时执行" /></div></div>
+      <div class="form-row"><label>限额说明</label><div class="fg" style="font-size:12px;color:var(--text-2)">日限额 50 个 / 月限额 600 个，超出部分将进入等待队列</div></div>
+    </div>
+    <div class="mf"><button class="btn btn-default">取 消</button><button class="btn btn-primary" id="nt-ok">创建任务</button></div>
+  </div>`;
+  document.body.appendChild(mask);
+  const close = () => mask.remove();
+  mask.onclick = (e) => { if (e.target === mask) close(); };
+  $('.x', mask).onclick = close;
+  $('#nt-ok', mask).onclick = () => { close(); toast('任务已创建（演示）'); };
+  $$('.btn-default', mask).forEach(b => { if (b.textContent === '取 消') b.onclick = close; });
+}
+
+/* ==================== 解析仓库 ==================== */
+const PARSE_STATUS = { '已完成': 'tag-green', '待解析中': 'tag-orange' };
+
+function pageParse() {
+  return `
+  <div class="pills">
+    <span class="pill on">解析仓库</span><span class="pill">天折转换</span><span class="pill">复制副本</span><span class="pill">归档</span>
+  </div>
+  <div class="card parse-box">
+    <div class="pt"><b>商品解析</b>
+      <select class="select" style="width:130px"><option>淘宝 / 万象</option><option>1688</option><option>拼多多</option><option>京东</option></select>
+    </div>
+    <textarea id="parse-input" placeholder="每一个淘宝 / 天猫 / 1688 商品链接或商品ID，支持一次粘贴多个，每行一个"></textarea>
+    <div class="parse-hint">仅抓取已公开渠道的链接，未抓取到的链接将不会出现在此处，维权时会短信给管理员。</div>
+    <div class="parse-actions">
+      <button class="btn btn-primary" id="parse-start">${ICON.play}开始解析</button>
+      <button class="btn btn-default" onclick="toast('演示环境：文件上传未接入')">${ICON.upload}上传文件解析</button>
+    </div>
+    <div class="parse-log" id="parse-log" style="display:none"></div>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <b style="font-size:14px">解析任务进度列表</b>
+      <span style="font-size:12px;color:var(--text-3)">根据链接去重数据，重新添加不会丢失</span>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 0 行 · 站内查询的不会重复解析，批次号的【已跳过】在主菜单详情页下也可</span>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr>
+        <th style="width:36px"><span class="checkbox"><span class="box"></span></span></th>
+        <th>任务</th><th>来源</th><th>解析方式</th><th>状态</th><th>解析进度</th><th>成功解析 / 已跳过</th><th>自动上新</th><th>当前商品链接</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.parseTasks.map(t => `
+        <tr>
+          <td><span class="checkbox"><span class="box"></span></span></td>
+          <td style="color:var(--primary);cursor:pointer;font-size:12px">${t.no}</td>
+          <td style="color:var(--text-2);font-size:12px">${t.src}</td>
+          <td>${t.via}</td>
+          <td><span class="tag ${PARSE_STATUS[t.status]}">${t.status}</span></td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="progress"><div class="bar ${t.status === '已完成' ? 'green' : ''}" style="width:${t.prog}%"></div></div>
+              <span style="font-size:12px;color:var(--text-2)">${t.prog}%</span>
+            </div>
+          </td>
+          <td style="font-size:12px">${t.ok} / ${t.skip}</td>
+          <td style="font-size:12px;color:var(--text-2);max-width:130px">${nl2br(t.auto)}</td>
+          <td style="font-size:12px;max-width:150px"><a href="javascript:;" onclick="toast('商品链接（演示）')">${t.link}</a></td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-text btn-sm" onclick="toast('导出数据包 ${t.no}')">导出数据包</button>
+            <button class="btn btn-text btn-sm" onclick="toast('重试 ${t.no}')">重试</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div class="pager">
+      <span>共 5 条</span><span class="pg on">1</span><span class="pg">20 条/页 ⌄</span>
+    </div>
+  </div>`;
+}
+
+function bindParse() {
+  const btn = $('#parse-start');
+  if (!btn) return;
+  btn.onclick = () => {
+    const raw = ($('#parse-input').value || '').trim();
+    if (!raw) { toast('请先粘贴商品链接', 'err'); return; }
+    const links = raw.split(/\s+/).filter(Boolean);
+    const log = $('#parse-log');
+    log.style.display = 'block';
+    log.innerHTML = `<div>[${now()}] 创建解析任务，共 ${links.length} 个链接</div>`;
+    btn.disabled = true;
+    btn.style.opacity = .6;
+    let i = 0;
+    const timer = setInterval(() => {
+      if (i >= links.length) {
+        clearInterval(timer);
+        log.innerHTML += `<div class="ok">[${now()}] 解析完成：成功 ${links.length} / 跳过 0</div>`;
+        log.scrollTop = log.scrollHeight;
+        btn.disabled = false;
+        btn.style.opacity = 1;
+        toast(`解析完成，共 ${links.length} 个商品`);
+        return;
+      }
+      const lk = links[i];
+      const host = lk.includes('1688') ? '1688' : lk.includes('taobao') || lk.includes('tmall') ? '淘宝' : '未知来源';
+      log.innerHTML += `<div>[${now()}] ${host} → 标准化商品 JSON（标题/主图/SKU/价格）✓</div>`;
+      log.scrollTop = log.scrollHeight;
+      i++;
+    }, 450);
+  };
+}
+
+/* ==================== 路由 ==================== */
+const PAGES = {
+  '#/company-screen': pageScreen,
+  '#/parse/repository': pageParse,
+  '#/parse/category': pageCategory,
+  '#/tb-item/publish': pagePublish,
+  '#/tb-item/publish-template': pageTemplate,
+  '#/tb-item/publish-blockword': pageBlockword,
+  '#/tb-item/shop-goods': pageGoods,
+  '#/optask/dispatch': pageDispatch,
+  '#/shop/violation': pageViolation,
+  '#/shop/daily-report': pagePlaceholder,
+  '#/ops-lead-workspace': pagePlaceholder,
+};
+
+function render() {
+  const hash = location.hash || '#/company-screen';
+  if (hash === '#/auth/login' || hash === '' || hash === '#/') { renderLogin(); return; }
+  if (!location.hash) { location.hash = '#/company-screen'; }
+  const fn = PAGES[hash] || pageScreen;
+  renderAdmin(fn);
+  if (hash === '#/parse/repository') bindParse();
+}
+
+/* ==================== 上货模板 ==================== */
+function pageTemplate() {
+  return `
+  <div class="pills">
+    <span class="pill">批量上新</span><span class="pill">解析仓库</span><span class="pill">私有分类</span><span class="pill on">上货模板</span><span class="pill">违禁词库</span>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <button class="btn btn-primary btn-sm" onclick="toast('新增模板（演示）')">${ICON.plus}新增模板</button>
+      <span style="font-size:12px;color:var(--text-3)">模板在上新时【自动启用】，对商铺统一发货时将从模板取值，商品会卖出才会有这个取值</span>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">共 6 条</span>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th>新增模板</th><th>价格</th><th>标题检测</th><th>标题检测</th><th>标题检测</th><th>品牌检测</th><th>发货时间</th><th>备注</th><th>创建人</th><th>创建时间</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.templates.map(t => `
+        <tr>
+          <td>${t.name}</td>
+          <td>${t.price}</td>
+          <td><span class="tag ${t.t1 === '开' ? 'tag-green' : 'tag-gray'}">${t.t1}</span></td>
+          <td><span class="tag ${t.t2 === '开' ? 'tag-green' : 'tag-gray'}">${t.t2}</span></td>
+          <td><span class="tag ${t.t3 === '开' ? 'tag-green' : 'tag-gray'}">${t.t3}</span></td>
+          <td>${t.brand}</td>
+          <td style="color:var(--text-3)">${t.note || '—'}</td>
+          <td>${t.by}</td>
+          <td style="color:var(--text-2)">${t.at}</td>
+          <td><button class="btn btn-text btn-sm" onclick="toast('编辑模板（演示）')">编辑</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="pager"><span>共 6 条</span><span class="pg on">1</span><span class="pg">20 条/页 ⌄</span></div>
+  </div>`;
+}
+
+/* ==================== 违禁词库 ==================== */
+function pageBlockword() {
+  return `
+  <div class="pills">
+    <span class="pill">批量上新</span><span class="pill">解析仓库</span><span class="pill">私有分类</span><span class="pill">上货模板</span><span class="pill on">违禁词库</span>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <span class="pill on" style="height:26px">全部</span><span class="pill" style="height:26px">标题</span><span class="pill" style="height:26px">描述</span><span class="pill" style="height:26px">图片</span>
+      <button class="btn btn-default btn-sm" onclick="toast('已复制全部违禁词（演示）')">一键复制全部违禁词</button>
+      <button class="btn btn-default btn-sm" onclick="toast('导入（演示）')">导入</button>
+      <button class="btn btn-primary btn-sm" onclick="toast('添加违禁词（演示）')">${ICON.plus}添加违禁词</button>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th style="width:36px"><span class="checkbox"><span class="box"></span></span></th>
+        <th>违禁词</th><th>库</th><th>匹配方式</th><th>禁用备注</th><th>添加人</th><th>添加时间</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.blockwords.map(b => `
+        <tr>
+          <td><span class="checkbox"><span class="box"></span></span></td>
+          <td style="max-width:280px">${esc(b.w)}</td>
+          <td><span class="tag tag-purple">${b.lib}</span></td>
+          <td>${b.match}</td>
+          <td style="color:var(--text-2);max-width:200px">${esc(b.note) || '—'}</td>
+          <td style="color:var(--text-2)">${b.by}</td>
+          <td style="color:var(--text-2)">${b.at}</td>
+          <td><button class="btn btn-text btn-sm" onclick="toast('编辑（演示）')">编辑</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="pager"><span>共 18 条</span><span class="pg on">1</span><span class="pg">20 条/页 ⌄</span></div>
+  </div>`;
+}
+
+/* ==================== 店铺商品 ==================== */
+function pageGoods() {
+  return `
+  <div class="pills">
+    <span class="pill">批量上新</span><span class="pill">解析仓库</span><span class="pill">私有分类</span><span class="pill">上货模板</span><span class="pill">违禁词库</span><span class="pill on">店铺商品</span>
+  </div>
+  <div class="card" style="padding:16px 20px;margin-bottom:14px">
+    <div style="display:flex;gap:40px;align-items:flex-start">
+      <div style="flex:1">
+        <div style="font-size:13px;color:var(--text-2);margin-bottom:8px">近 30 天成交金额（<b style="color:var(--text)">¥611,049.21</b>） · 出售 5,359 · 访客 20 天流量 ¥53,457</div>
+        <svg width="100%" height="120" viewBox="0 0 700 120" preserveAspectRatio="none">
+          <path d="M0,90 C60,80 100,60 150,65 C200,70 240,40 300,45 C360,50 400,30 460,35 C520,40 560,55 620,50 C660,47 690,40 700,42 L700,120 L0,120 Z" fill="#e6f4ff"/>
+          <path d="M0,90 C60,80 100,60 150,65 C200,70 240,40 300,45 C360,50 400,30 460,35 C520,40 560,55 620,50 C660,47 690,40 700,42" fill="none" stroke="#1677ff" stroke-width="2"/>
+          <path d="M0,105 C80,100 160,95 240,98 C320,101 400,90 480,92 C560,94 640,85 700,88 L700,120 L0,120 Z" fill="#fff7e6" opacity=".7"/>
+        </svg>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-3);margin-top:4px"><span>09-13</span><span>09-19</span><span>09-25</span><span>10-01</span><span>10-07</span></div>
+      </div>
+      <div style="display:flex;gap:12px;flex:none">
+        ${[['40,000', '出售商品'], ['30,000', '访客'], ['20,000', '曝光'], ['10,000', '成交']].map(x => `
+        <div style="text-align:center">
+          <div style="font-size:16px;font-weight:600">${x[0]}</div>
+          <div style="font-size:11px;color:var(--text-3)">${x[1]}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="card" style="padding:14px 16px;margin-bottom:14px;display:flex;gap:24px;flex-wrap:wrap">
+    ${[['出售中', '115,293', 'blue'], ['已下架', '122', 'gray'], ['仓库中', '32,549', 'gray'], ['违规商品', '3,898', 'red'], ['删除记录', '79,123', 'gray']]
+      .map(x => `<div><div style="font-size:18px;font-weight:600;color:var(--${x[2] === 'blue' ? 'primary' : x[2] === 'red' ? 'error' : 'text'})">${x[1]}</div><div style="font-size:12px;color:var(--text-2)">${x[0]}</div></div>`).join('')}
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+      <span style="font-size:12px;color:var(--text-2)">工具：</span>
+      <button class="btn btn-default btn-sm" onclick="toast('A分析（演示）')">A分析</button>
+      <button class="btn btn-default btn-sm" onclick="toast('商品审核（演示）')">商品审核</button>
+      <button class="btn btn-default btn-sm" onclick="toast('操作日志（演示）')">操作日志</button>
+    </div>
+  </div>
+  <div class="card filter-bar">
+    <select class="select"><option>全部店铺</option></select>
+    <select class="select"><option>店铺品牌</option></select>
+    <input class="input" placeholder="商品标题、宝贝ID" />
+    <input class="input" style="width:150px" placeholder="创建时间起" />
+    <button class="btn btn-primary btn-sm">查询</button>
+    <button class="btn btn-default btn-sm">重置</button>
+    <span style="margin-left:auto;font-size:12px;color:var(--text-2)"><span class="checkbox on"><span class="box"></span></span> 只显示全部宝贝</span>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <span style="font-size:12.5px;color:var(--text-2)">已选中 <b style="color:var(--text)">0</b> 条</span>
+      <span style="font-size:12px;color:var(--text-3)">历史下架 / 历史违规 / 强制下架 / 删除</span>
+      <span style="margin-left:auto;font-size:12px;color:var(--text-3)">商品在售 90 天 · 排序权重 ⌄</span>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th style="width:36px"><span class="checkbox"><span class="box"></span></span></th>
+        <th>宝贝信息</th><th>价格</th><th>库存</th><th>30 天销量</th><th>创建时间</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.goods.map(g => `
+        <tr>
+          <td><span class="checkbox"><span class="box"></span></span></td>
+          <td>
+            <div style="display:flex;gap:10px;align-items:center">
+              <div style="width:44px;height:44px;border-radius:4px;background:linear-gradient(135deg,#e6f4ff,#bae0ff);flex:none;display:flex;align-items:center;justify-content:center;color:var(--primary)">${ICON.box}</div>
+              <div style="max-width:320px">
+                <a href="javascript:;" onclick="toast('商品详情（演示）')" style="color:var(--text)">${g.name}</a>
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:2px">${g.shop} · <span style="color:var(--primary)">关联违规</span></div>
+              </div>
+            </div>
+          </td>
+          <td>${g.price}</td>
+          <td>${g.stock}</td>
+          <td>${g.sales}<br><span style="font-size:11.5px;color:var(--text-3)">${g.rate}</span></td>
+          <td style="color:var(--text-2)">${g.date}</td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-text btn-sm" onclick="toast('编辑（演示）')">编辑</button>
+            <button class="btn btn-text btn-sm" onclick="toast('下架（演示）')">下架</button>
+            <button class="btn btn-danger-text btn-sm" onclick="toast('删除（演示）')">删除</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="pager"><span>共 115,293 条</span><span class="pg on">1</span><span class="pg">2</span><span class="pg">›</span><span class="pg">20 条/页 ⌄</span></div>
+  </div>`;
+}
+
+/* ==================== 任务派发 ==================== */
+const DISPATCH_STATUS = { '已完成': 'tag-green', '待待待': 'tag-orange' };
+
+function pageDispatch() {
+  return `
+  <div class="page-head"><div><h2>任务派发</h2></div></div>
+  <div class="stat-row" style="grid-template-columns:repeat(6,1fr)">
+    ${[['全部待', '106'], ['未做', '0'], ['待开始', '0'], ['可执行', '0'], ['已暂停', '35'], ['已完成', '1031']].map((x, i) => `
+    <div class="card stat-card">
+      <div class="sic ${i === 4 ? 'orange' : i === 5 ? 'green' : 'blue'}">${ICON.task}</div>
+      <div><div class="v">${x[1]}</div><div class="l">${x[0]}</div></div>
+    </div>`).join('')}
+  </div>
+  <div class="kpi-row" style="grid-template-columns:1fr 1fr;margin-bottom:14px">
+    <div class="card kpi-card">
+      <div><div class="kl">待处理</div><div class="kv">882</div><div class="kd">未读消息 0 · 未读通知 0 · 其中待认领 15 条</div></div>
+      <div class="kic">${ICON.task}</div>
+    </div>
+    <div class="card kpi-card">
+      <div><div class="kl">补基础</div><div class="kv">184</div><div class="kd">未读消息 0 · 未读通知 0 · 其中待认领 15 条</div></div>
+      <div class="kic">${ICON.folder}</div>
+    </div>
+  </div>
+  <div class="card filter-bar">
+    <select class="select"><option>全部店铺</option></select>
+    <select class="select"><option>任务类型 / 店铺 / 店群 / 接收人</option></select>
+    <select class="select"><option>计划</option></select>
+    <input class="input" style="width:150px" placeholder="起止日期" />
+    <button class="btn btn-primary btn-sm">查询</button>
+    <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">今天 · 昨天 · 近 7 天 · 本月 · 重置</span>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <button class="btn btn-default btn-sm">刷新</button>
+      <button class="btn btn-default btn-sm">通知客服</button>
+      <button class="btn btn-default btn-sm">手动派发记录</button>
+      <button class="btn btn-default btn-sm">库存 / 二维码处理记录</button>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="toast('派发任务（演示）')">${ICON.plus}派发任务</button>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr>
+        <th>任务类型</th><th>店铺</th><th>任务名</th><th>计划</th><th>状态</th><th>接收人</th><th>创建人</th><th>完成人</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.dispatch.map(d => `
+        <tr>
+          <td><span class="tag ${d.type === '补标签' ? 'tag-orange' : 'tag-blue'}">${d.type}</span></td>
+          <td><a href="javascript:;" onclick="toast('店铺（演示）')">${d.shop}</a></td>
+          <td style="max-width:220px;font-size:12.5px">${esc(d.no)}</td>
+          <td style="color:var(--text-2)">${d.plan}</td>
+          <td><span class="tag ${DISPATCH_STATUS[d.status]}">${d.status}</span></td>
+          <td>${d.recv}</td>
+          <td>${d.by}</td>
+          <td style="color:var(--text-2)">${d.done}</td>
+          <td><button class="btn btn-text btn-sm" onclick="toast('详情（演示）')">详情</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div class="pager"><span>共 1066 条</span><span class="pg on">1</span><span class="pg">2</span><span class="pg">3</span><span class="pg">…</span><span class="pg">107</span><span class="pg">›</span><span class="pg">10 条/页 ⌄</span></div>
+  </div>`;
+}
+
+/* ==================== 店铺违规 ==================== */
+function pageViolation() {
+  return `
+  <div class="page-head"><div><h2>店铺违规</h2></div></div>
+  <div class="stat-row" style="grid-template-columns:repeat(4,1fr)">
+    ${[['严重违规', '174', 'red', '倒计 1 条'], ['虚假交易', '2', 'orange', '倒计 0 分'], ['数据安全', '2827', 'blue', '倒计 24 条'], ['市场管理', '414', 'blue', '倒计 0 分']]
+      .map(x => `
+      <div class="card stat-card">
+        <div class="sic ${x[2]}">${ICON.warn}</div>
+        <div><div class="v">${x[1]}</div><div class="l">${x[0]} · ${x[3]}</div></div>
+      </div>`).join('')}
+  </div>
+  <div class="card filter-bar">
+    <select class="select"><option>全部店铺</option></select>
+    <select class="select"><option>全部违规</option></select>
+    <select class="select" style="width:110px"><option>2026 年</option></select>
+    <span style="font-size:12.5px;color:var(--text-2)">合计：192 条 · 待处理 82 条</span>
+    <button class="btn btn-primary btn-sm">查询</button>
+    <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">昨日新增 · 待处理 25 · 待处置 99 · 今日新增 23 · 全部违规 3419</span>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <span style="font-size:12.5px;color:var(--text-2)">2026 年 · 倒计时 · 商城状态 · 违规类型 · 违规编号 · 违规时间 · 采集时间</span>
+      <span style="margin-left:auto;font-size:12.5px;color:var(--text-2)">批量提醒 · 处置</span>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <thead><tr>
+        <th style="width:36px"><span class="checkbox"><span class="box"></span></span></th>
+        <th>店铺</th><th>负荷来源</th><th>违规编号</th><th>违规时间</th><th>采集时间</th><th>违规类型</th><th>严重程度</th><th>违规对象</th><th>处理进度</th><th>操作建议</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.violations.map(v => `
+        <tr>
+          <td><span class="checkbox"><span class="box"></span></span></td>
+          <td><a href="javascript:;" onclick="toast('店铺（演示）')">${v.shop}</a></td>
+          <td style="color:var(--text-2)">${v.src}</td>
+          <td style="font-size:12px">${v.no}</td>
+          <td style="color:var(--text-2);font-size:12px">${v.time}</td>
+          <td style="color:var(--text-2);font-size:12px">${v.time}</td>
+          <td>${v.type}</td>
+          <td><span class="tag tag-orange">${v.lv}</span></td>
+          <td style="font-size:12px">${v.obj}</td>
+          <td><span class="tag tag-red">${v.prog}</span></td>
+          <td><button class="btn btn-text btn-sm" onclick="toast('查看建议（演示）')">${v.act}</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div class="pager"><span>共 25 条</span><span class="pg on">1</span><span class="pg">2</span><span class="pg">›</span><span class="pg">20 条/页 ⌄</span></div>
+  </div>`;
+}
+
+/* ==================== 私有分类 ==================== */
+function pageCategory() {
+  return `
+  <div class="pills">
+    <span class="pill">批量上新</span><span class="pill on">解析仓库</span><span class="pill">私有分类</span>
+  </div>
+  <div class="card tbl-card">
+    <div class="tbl-toolbar">
+      <select class="select"><option>分类名称</option></select>
+      <input class="input" style="width:160px" placeholder="分类名称" />
+      <button class="btn btn-primary btn-sm">查询</button>
+      <button class="btn btn-default btn-sm">重置</button>
+      <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="toast('新增分类（演示）')">${ICON.plus}新增</button>
+    </div>
+    <table class="tbl">
+      <thead><tr>
+        <th>排序</th><th>分类名称</th><th>状态</th><th>商品</th><th>备注</th><th>创建人</th><th>创建时间</th><th>更新时间</th><th>操作</th>
+      </tr></thead>
+      <tbody>
+        ${DATA.categories.map(c => `
+        <tr>
+          <td>${c.id}</td>
+          <td>${c.name}</td>
+          <td><span class="tag tag-green">启用</span></td>
+          <td>${c.n}</td>
+          <td style="color:var(--text-3)">—</td>
+          <td>邹建德</td>
+          <td style="color:var(--text-2)">2026-10-12 16:18:56</td>
+          <td style="color:var(--text-2)">2026-10-12 15:54:13</td>
+          <td style="white-space:nowrap">
+            <button class="btn btn-text btn-sm" onclick="toast('编辑（演示）')">编辑</button>
+            <button class="btn btn-danger-text btn-sm" onclick="toast('删除（演示）')">删除</button>
+          </td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="pager"><span>共 157 条</span><span class="pg on">1</span><span class="pg">2</span><span class="pg">3</span><span class="pg">…</span><span class="pg">8</span><span class="pg">›</span><span class="pg">20 条/页 ⌄</span></div>
+  </div>`;
+}
+
+function pagePlaceholder() {
+  return `<div class="card" style="padding:60px;text-align:center;color:var(--text-3)">
+    <div style="font-size:15px;margin-bottom:8px">${PAGE_META[location.hash] ? PAGE_META[location.hash][1] : '页面'}</div>
+    <div style="font-size:12.5px">该页面在演示版中暂未展开，核心流程请查看「批量上新」与「解析仓库」</div>
+  </div>`;
+}
+
+window.addEventListener('hashchange', render);
+if (!location.hash) location.hash = '#/auth/login';
+render();
 </script>
 </body>
 </html>
