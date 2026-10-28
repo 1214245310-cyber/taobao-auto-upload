@@ -10,6 +10,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,6 +24,10 @@ public class AuthService {
     private final Map<String, String> captchaStore = new ConcurrentHashMap<>();
     private final Map<String, Long> tokenStore = new ConcurrentHashMap<>();
     private final long ttlSeconds;
+    /** 连续登录失败达到该次数即锁定 */
+    private static final int MAX_LOGIN_FAIL = 5;
+    /** 锁定时长（分钟） */
+    private static final int LOCK_MINUTES = 10;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
@@ -85,17 +90,34 @@ public class AuthService {
         return m;
     }
 
-    public Map<String, Object> login(String username, String password, String code, String uuid) {
+    public Map<String, Object> login(String username, String password, String code, String uuid, String clientIp) {
         verifyCaptcha(code, uuid);
         User user = userRepository.findByUsername(username == null ? "" : username.trim())
                 .orElseThrow(() -> new IllegalArgumentException("用户名或密码错误"));
+
+        // 失败次数过多时临时锁定，挡住对着一个账号硬试密码的脚本
+        LocalDateTime now = LocalDateTime.now();
+        if (user.getLockedUntil() != null && user.getLockedUntil().isAfter(now)) {
+            long minutes = Math.max(1, Duration.between(now, user.getLockedUntil()).toMinutes() + 1);
+            throw new IllegalArgumentException("登录失败次数过多，请 " + minutes + " 分钟后再试");
+        }
         if (!matchesAndMaybeUpgrade(user, password)) {
+            int fails = (user.getLoginFailCount() == null ? 0 : user.getLoginFailCount()) + 1;
+            user.setLoginFailCount(fails);
+            if (fails >= MAX_LOGIN_FAIL) {
+                user.setLockedUntil(now.plusMinutes(LOCK_MINUTES));
+                user.setLoginFailCount(0);
+            }
+            userRepository.save(user);
             throw new IllegalArgumentException("用户名或密码错误");
         }
         if ("1".equals(user.getStatus())) {
             throw new IllegalArgumentException("该账号已被停用，请联系管理员");
         }
-        user.setLastLoginAt(LocalDateTime.now());
+        user.setLastLoginAt(now);
+        user.setLastLoginIp(clientIp);
+        user.setLoginFailCount(0);
+        user.setLockedUntil(null);
         userRepository.save(user);
 
         String token = UUID.randomUUID().toString().replace("-", "");

@@ -23,7 +23,8 @@ public class SystemController {
         u.put("userId", user.getId());
         u.put("userName", user.getUsername());
         u.put("nickName", user.getNickname());
-        u.put("avatar", "");
+        u.put("avatar", user.getAvatar() == null ? "" : user.getAvatar());
+        u.put("email", user.getEmail() == null ? "" : user.getEmail());
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("user", u);
         m.put("roles", List.of("admin"));

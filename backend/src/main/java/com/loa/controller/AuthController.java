@@ -42,8 +42,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public R<Map<String, Object>> login(@RequestBody LoginRequest req) {
-        return R.ok(authService.login(req.getUsername(), req.getPassword(), req.getCode(), req.getUuid()));
+    public R<Map<String, Object>> login(@RequestBody LoginRequest req, HttpServletRequest request) {
+        return R.ok(authService.login(req.getUsername(), req.getPassword(), req.getCode(), req.getUuid(),
+                clientIp(request)));
     }
 
     @PostMapping("/register")
