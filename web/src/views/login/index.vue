@@ -1,45 +1,47 @@
 <template>
   <div class="login-page">
-    <div class="login-shell">
-      <aside class="brand-pane">
-        <img :src="loginPhoto" class="brand-photo" alt="" />
-        <div class="brand-overlay">
-          <div class="brand-mark">LOA</div>
-          <div class="brand-line">淘宝自动上货系统</div>
-        </div>
-      </aside>
+    <div class="bg-layer" :style="{ backgroundImage: `url(${loginBg})` }"></div>
+    <div class="bg-mask"></div>
 
-      <div class="login-card">
-        <h2>欢迎回来 👋🏻</h2>
-        <p class="subtitle">请输入账户信息</p>
-        <el-form :model="form" @submit.prevent="handleLogin">
-          <el-form-item>
-            <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" />
-          </el-form-item>
-          <el-form-item>
-            <el-input
-              v-model="form.password"
-              type="password"
-              placeholder="密码"
-              :prefix-icon="Lock"
-              show-password
-            />
-          </el-form-item>
-          <el-form-item>
-            <div class="captcha-row">
-              <el-input v-model="form.code" placeholder="验证码" :prefix-icon="Key" />
-              <img :src="codeImg" class="captcha-img" alt="验证码" @click="refreshCode" />
-            </div>
-          </el-form-item>
-          <el-button type="primary" :loading="loading" native-type="submit" class="login-btn">
-            登录
-          </el-button>
-        </el-form>
-        <div class="switch-tip">
-          还没有账号？
-          <el-link type="primary" :underline="false" @click="openRegister">立即注册</el-link>
-        </div>
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-logo">LOA</div>
+        <div class="brand-name">淘宝自动上货系统</div>
       </div>
+
+      <h2 class="title">欢迎回来 👋🏻</h2>
+      <p class="subtitle">请输入账户信息以继续</p>
+
+      <el-form :model="form" @submit.prevent="handleLogin">
+        <el-form-item>
+          <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" />
+        </el-form-item>
+        <el-form-item>
+          <el-input
+            v-model="form.password"
+            type="password"
+            placeholder="密码"
+            :prefix-icon="Lock"
+            show-password
+          />
+        </el-form-item>
+        <el-form-item>
+          <div class="captcha-row">
+            <el-input v-model="form.code" placeholder="验证码" :prefix-icon="Key" />
+            <img :src="codeImg" class="captcha-img" alt="验证码" @click="refreshCode" />
+          </div>
+        </el-form-item>
+        <el-button type="primary" :loading="loading" native-type="submit" class="login-btn">
+          登录
+        </el-button>
+      </el-form>
+
+      <div class="switch-tip">
+        还没有账号？
+        <el-link type="primary" :underline="false" @click="openRegister">立即注册</el-link>
+      </div>
+
+      <div class="copyright">© 2026 LOA · 淘宝自动上货系统</div>
     </div>
 
     <el-dialog
@@ -111,7 +113,7 @@ import { User, Lock, Key, Message } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
 import { register as apiRegister, sendEmailCode } from '@/api/auth'
-import loginPhoto from '@/assets/login-photo.webp'
+import loginBg from '@/assets/login-bg.webp'
 
 const user = useUserStore()
 const router = useRouter()
@@ -246,84 +248,108 @@ onUnmounted(() => {
 
 <style scoped>
 .login-page {
-  min-height: 100%;
+  position: relative;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
   box-sizing: border-box;
-  background:
-    radial-gradient(1200px 600px at 15% 10%, rgba(99, 102, 241, 0.18), transparent 60%),
-    linear-gradient(135deg, #111827, #1f2937 55%, #374151);
-}
-
-.login-shell {
-  display: flex;
-  background: #fff;
-  border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
 }
 
-/* 左侧图片栏：宽度固定，高度跟随右侧表单撑开 */
-.brand-pane {
+/* 整页背景图 */
+.bg-layer {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transform: scale(1.05);
+}
+
+/* 压暗 + 暗角，保证卡片文字对比度 */
+.bg-mask {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1200px 700px at 50% 40%, rgba(10, 14, 30, 0.35), rgba(6, 10, 24, 0.78) 75%),
+    linear-gradient(135deg, rgba(8, 12, 30, 0.55), rgba(20, 16, 48, 0.5));
+}
+
+/* 玻璃拟态登录卡 */
+.login-card {
   position: relative;
-  width: 320px;
-  min-height: 420px;
-  flex-shrink: 0;
-  background: #1f2937;
-}
-.brand-photo {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  /* 原图分辨率有限，轻微降饱和 + 提对比，弱化模糊感 */
-  filter: saturate(0.92) contrast(1.06) brightness(0.98);
-}
-.brand-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: 26px 24px;
+  z-index: 2;
+  width: 400px;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 40px 36px 26px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
   color: #fff;
-  background: linear-gradient(
-    180deg,
-    rgba(15, 23, 42, 0) 30%,
-    rgba(15, 23, 42, 0.55) 70%,
-    rgba(15, 23, 42, 0.88) 100%
-  );
 }
-.brand-mark {
-  font-size: 30px;
-  font-weight: 700;
-  letter-spacing: 4px;
-  line-height: 1.1;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+
+.brand {
+  text-align: center;
+  margin-bottom: 18px;
 }
-.brand-line {
-  margin-top: 6px;
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+  font-weight: 800;
+  letter-spacing: 2px;
+  font-size: 20px;
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(99, 102, 241, 0.5);
+}
+.brand-name {
+  margin-top: 10px;
   font-size: 13px;
-  letter-spacing: 1px;
+  letter-spacing: 3px;
   color: rgba(255, 255, 255, 0.82);
 }
 
-.login-card {
-  width: 380px;
-  box-sizing: border-box;
-  padding: 36px 32px 28px;
-}
-.login-card h2 {
-  margin: 0 0 4px;
+.title {
+  text-align: center;
+  margin: 4px 0 4px;
+  font-size: 22px;
+  color: #fff;
 }
 .subtitle {
-  color: #909399;
-  margin: 0 0 24px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 22px;
+  font-size: 13px;
 }
+
+/* 输入框改为透明玻璃风，适配深色卡片 */
+.login-card :deep(.el-input__wrapper) {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.22) inset;
+}
+.login-card :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.7) inset;
+}
+.login-card :deep(.el-input__inner) {
+  color: #fff;
+}
+.login-card :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.55);
+}
+.login-card :deep(.el-input__prefix) {
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .captcha-row {
   display: flex;
   gap: 12px;
@@ -332,32 +358,49 @@ onUnmounted(() => {
 .captcha-img {
   width: 120px;
   height: 40px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
 }
 .code-btn {
   width: 116px;
   flex-shrink: 0;
 }
+
 .login-btn {
   width: 100%;
+  font-weight: 600;
+  letter-spacing: 2px;
 }
+.login-btn.el-button--primary {
+  background: linear-gradient(135deg, #6366f1, #22d3ee);
+  border: none;
+  box-shadow: 0 10px 24px rgba(99, 102, 241, 0.45);
+}
+.login-btn.el-button--primary:hover {
+  filter: brightness(1.08);
+}
+
 .switch-tip {
   margin-top: 16px;
   text-align: center;
   font-size: 13px;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.7);
 }
 
-/* 窄屏隐藏图片栏，只留表单 */
-@media (max-width: 820px) {
-  .brand-pane {
-    display: none;
-  }
+.copyright {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+@media (max-width: 480px) {
   .login-card {
-    width: 100%;
-    max-width: 380px;
+    padding: 32px 22px 22px;
+    border-radius: 16px;
   }
 }
 </style>
