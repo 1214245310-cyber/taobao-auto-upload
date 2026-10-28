@@ -1,34 +1,44 @@
 <template>
   <div class="login-page">
-    <div class="login-card">
-      <h2>欢迎回来 👋🏻</h2>
-      <p class="subtitle">请输入账户信息</p>
-      <el-form :model="form" @submit.prevent="handleLogin">
-        <el-form-item>
-          <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" />
-        </el-form-item>
-        <el-form-item>
-          <el-input
-            v-model="form.password"
-            type="password"
-            placeholder="密码"
-            :prefix-icon="Lock"
-            show-password
-          />
-        </el-form-item>
-        <el-form-item>
-          <div class="captcha-row">
-            <el-input v-model="form.code" placeholder="验证码" :prefix-icon="Key" />
-            <img :src="codeImg" class="captcha-img" alt="验证码" @click="refreshCode" />
-          </div>
-        </el-form-item>
-        <el-button type="primary" :loading="loading" native-type="submit" class="login-btn">
-          登录
-        </el-button>
-      </el-form>
-      <div class="switch-tip">
-        还没有账号？
-        <el-link type="primary" :underline="false" @click="openRegister">立即注册</el-link>
+    <div class="login-shell">
+      <aside class="brand-pane">
+        <img :src="loginPhoto" class="brand-photo" alt="" />
+        <div class="brand-overlay">
+          <div class="brand-mark">LOA</div>
+          <div class="brand-line">淘宝自动上货系统</div>
+        </div>
+      </aside>
+
+      <div class="login-card">
+        <h2>欢迎回来 👋🏻</h2>
+        <p class="subtitle">请输入账户信息</p>
+        <el-form :model="form" @submit.prevent="handleLogin">
+          <el-form-item>
+            <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" />
+          </el-form-item>
+          <el-form-item>
+            <el-input
+              v-model="form.password"
+              type="password"
+              placeholder="密码"
+              :prefix-icon="Lock"
+              show-password
+            />
+          </el-form-item>
+          <el-form-item>
+            <div class="captcha-row">
+              <el-input v-model="form.code" placeholder="验证码" :prefix-icon="Key" />
+              <img :src="codeImg" class="captcha-img" alt="验证码" @click="refreshCode" />
+            </div>
+          </el-form-item>
+          <el-button type="primary" :loading="loading" native-type="submit" class="login-btn">
+            登录
+          </el-button>
+        </el-form>
+        <div class="switch-tip">
+          还没有账号？
+          <el-link type="primary" :underline="false" @click="openRegister">立即注册</el-link>
+        </div>
       </div>
     </div>
 
@@ -86,6 +96,7 @@ import { User, Lock, Key } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
 import { register as apiRegister } from '@/api/auth'
+import loginPhoto from '@/assets/login-photo.webp'
 
 const user = useUserStore()
 const router = useRouter()
@@ -189,18 +200,73 @@ onMounted(refreshCode)
 
 <style scoped>
 .login-page {
-  height: 100%;
+  min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1f2937, #374151);
+  padding: 24px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(1200px 600px at 15% 10%, rgba(99, 102, 241, 0.18), transparent 60%),
+    linear-gradient(135deg, #111827, #1f2937 55%, #374151);
 }
-.login-card {
-  width: 360px;
+
+.login-shell {
+  display: flex;
   background: #fff;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.45);
+}
+
+/* 左侧图片栏：宽度固定，高度跟随右侧表单撑开 */
+.brand-pane {
+  position: relative;
+  width: 320px;
+  flex-shrink: 0;
+  background: #1f2937;
+}
+.brand-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* 原图分辨率有限，轻微降饱和 + 提对比，弱化模糊感 */
+  filter: saturate(0.92) contrast(1.06) brightness(0.98);
+}
+.brand-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 26px 24px;
+  color: #fff;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0) 30%,
+    rgba(15, 23, 42, 0.55) 70%,
+    rgba(15, 23, 42, 0.88) 100%
+  );
+}
+.brand-mark {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 4px;
+  line-height: 1.1;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+.brand-line {
+  margin-top: 6px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.login-card {
+  width: 380px;
+  box-sizing: border-box;
+  padding: 36px 32px 28px;
 }
 .login-card h2 {
   margin: 0 0 4px;
@@ -229,5 +295,16 @@ onMounted(refreshCode)
   text-align: center;
   font-size: 13px;
   color: #909399;
+}
+
+/* 窄屏隐藏图片栏，只留表单 */
+@media (max-width: 820px) {
+  .brand-pane {
+    display: none;
+  }
+  .login-card {
+    width: 100%;
+    max-width: 380px;
+  }
 }
 </style>
