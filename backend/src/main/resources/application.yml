@@ -21,6 +21,23 @@ spring:
       enabled: false
   jackson:
     default-property-inclusion: non_null
+  # QQ 邮箱 SMTP。账号与授权码从环境变量读取，不写进仓库。
+  # LOA_MAIL_USERNAME=你的QQ邮箱@qq.com   LOA_MAIL_PASSWORD=16位授权码
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: ${LOA_MAIL_USERNAME:}
+    password: ${LOA_MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          connectiontimeout: 8000
+          timeout: 8000
+          writetimeout: 8000
 loa:
   parse:
     provider: mock
@@ -32,6 +49,10 @@ loa:
     password: admin123
   session:
     ttl-seconds: 7200
+  mail:
+    # 发件人必须与上面的 username 一致，QQ 邮箱会校验
+    from: ${LOA_MAIL_USERNAME:}
+    from-name: LOA 淘宝上货系统
 logging:
   level:
     root: INFO

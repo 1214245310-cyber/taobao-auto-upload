@@ -10,6 +10,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -18,15 +19,18 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailCodeService emailCodeService;
     private final Map<String, String> captchaStore = new ConcurrentHashMap<>();
     private final Map<String, Long> tokenStore = new ConcurrentHashMap<>();
     private final long ttlSeconds;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
+                       EmailCodeService emailCodeService,
                        @Value("${loa.session.ttl-seconds:7200}") long ttlSeconds) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.emailCodeService = emailCodeService;
         this.ttlSeconds = ttlSeconds;
     }
 
@@ -42,9 +46,12 @@ public class AuthService {
         return m;
     }
 
-    /** 注册：用户名唯一，密码 BCrypt 存储，默认角色 USER、状态正常 */
+    /**
+     * 注册：用户名与邮箱均唯一，密码 BCrypt 存储，注册即视为邮箱已验证。
+     * 校验顺序刻意把「邮箱唯一」放在「验证码校验」之前，
+     * 避免用户因为用户名重复白白消耗一次验证码。
+     */
     public Map<String, Object> register(RegisterRequest req) {
-        verifyCaptcha(req.getCode(), req.getUuid());
         if (!req.getPassword().equals(req.getConfirmPassword())) {
             throw new IllegalArgumentException("两次输入的密码不一致");
         }
@@ -52,11 +59,20 @@ public class AuthService {
         if (userRepository.findByUsername(username).isPresent()) {
             throw new IllegalArgumentException("用户名「" + username + "」已被注册");
         }
+        String email = req.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("邮箱「" + email + "」已被注册");
+        }
+        // 最后消费验证码
+        emailCodeService.verify(email, req.getEmailCode());
+
         User u = new User();
         u.setUsername(username);
         u.setPassword(passwordEncoder.encode(req.getPassword()));
         u.setNickname(req.getNickname() == null || req.getNickname().isBlank()
                 ? username : req.getNickname().trim());
+        u.setEmail(email);
+        u.setEmailVerified("1");
         u.setRole("USER");
         u.setStatus("0");
         userRepository.save(u);
@@ -65,6 +81,7 @@ public class AuthService {
         m.put("id", u.getId());
         m.put("username", u.getUsername());
         m.put("nickname", u.getNickname());
+        m.put("email", u.getEmail());
         return m;
     }
 
@@ -78,6 +95,9 @@ public class AuthService {
         if ("1".equals(user.getStatus())) {
             throw new IllegalArgumentException("该账号已被停用，请联系管理员");
         }
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
         String token = UUID.randomUUID().toString().replace("-", "");
         tokenStore.put(token, user.getId());
         Map<String, Object> m = new LinkedHashMap<>();

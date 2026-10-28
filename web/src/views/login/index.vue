@@ -45,7 +45,7 @@
     <el-dialog
       v-model="registerVisible"
       title="注册新账号"
-      width="400px"
+      width="420px"
       :close-on-click-modal="false"
       @closed="resetRegisterForm"
     >
@@ -55,6 +55,27 @@
         </el-form-item>
         <el-form-item label="昵称（选填）">
           <el-input v-model="regForm.nickname" placeholder="不填则与用户名相同" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="regForm.email" placeholder="例如 yourname@qq.com" :prefix-icon="Message" />
+        </el-form-item>
+        <el-form-item label="邮箱验证码">
+          <div class="captcha-row">
+            <el-input
+              v-model="regForm.emailCode"
+              placeholder="6 位数字"
+              maxlength="6"
+              :prefix-icon="Key"
+            />
+            <el-button
+              class="code-btn"
+              :disabled="countdown > 0"
+              :loading="codeSending"
+              @click="sendCode"
+            >
+              {{ countdown > 0 ? countdown + 's' : '获取验证码' }}
+            </el-button>
+          </div>
         </el-form-item>
         <el-form-item label="密码">
           <el-input
@@ -74,12 +95,6 @@
             :prefix-icon="Lock"
           />
         </el-form-item>
-        <el-form-item label="验证码">
-          <div class="captcha-row">
-            <el-input v-model="regForm.code" placeholder="请输入验证码" :prefix-icon="Key" />
-            <img :src="regCodeImg" class="captcha-img" alt="验证码" @click="refreshRegCode" />
-          </div>
-        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="registerVisible = false">取消</el-button>
@@ -90,12 +105,12 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { User, Lock, Key } from '@element-plus/icons-vue'
+import { User, Lock, Key, Message } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
-import { register as apiRegister } from '@/api/auth'
+import { register as apiRegister, sendEmailCode } from '@/api/auth'
 import loginPhoto from '@/assets/login-photo.webp'
 
 const user = useUserStore()
@@ -109,26 +124,24 @@ const form = reactive({ username: '', password: '', code: '' })
 
 const registerVisible = ref(false)
 const regLoading = ref(false)
-const regCodeImg = ref('')
-const regUuid = ref('')
+const codeSending = ref(false)
+const countdown = ref(0)
+let countdownTimer: number | undefined
 const regForm = reactive({
   username: '',
   nickname: '',
+  email: '',
+  emailCode: '',
   password: '',
   confirmPassword: '',
-  code: '',
 })
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 async function refreshCode() {
   const res = await user.fetchCode()
   codeImg.value = 'data:image/png;base64,' + res.data.img
   uuid.value = res.data.uuid as string
-}
-
-async function refreshRegCode() {
-  const res = await user.fetchCode()
-  regCodeImg.value = 'data:image/png;base64,' + res.data.img
-  regUuid.value = res.data.uuid as string
 }
 
 async function handleLogin() {
@@ -149,20 +162,54 @@ async function handleLogin() {
 
 function openRegister() {
   registerVisible.value = true
-  refreshRegCode()
 }
 
 function resetRegisterForm() {
   regForm.username = ''
   regForm.nickname = ''
+  regForm.email = ''
+  regForm.emailCode = ''
   regForm.password = ''
   regForm.confirmPassword = ''
-  regForm.code = ''
+}
+
+function startCountdown(seconds: number) {
+  countdown.value = seconds
+  if (countdownTimer) window.clearInterval(countdownTimer)
+  countdownTimer = window.setInterval(() => {
+    countdown.value -= 1
+    if (countdown.value <= 0 && countdownTimer) {
+      window.clearInterval(countdownTimer)
+      countdownTimer = undefined
+    }
+  }, 1000)
+}
+
+async function sendCode() {
+  if (!EMAIL_RE.test(regForm.email)) {
+    return ElMessage.warning('请输入正确的邮箱地址')
+  }
+  codeSending.value = true
+  try {
+    const res = await sendEmailCode(regForm.email)
+    ElMessage.success('验证码已发送，请查收邮件（没收到就看下垃圾箱）')
+    startCountdown((res.data?.cooldown as number) || 60)
+  } catch {
+    // 错误提示已由 request 拦截器统一弹出
+  } finally {
+    codeSending.value = false
+  }
 }
 
 async function handleRegister() {
   if (!/^[a-zA-Z0-9_]{3,20}$/.test(regForm.username)) {
     return ElMessage.warning('用户名需为 3-20 位字母、数字或下划线')
+  }
+  if (!EMAIL_RE.test(regForm.email)) {
+    return ElMessage.warning('请输入正确的邮箱地址')
+  }
+  if (!/^\d{6}$/.test(regForm.emailCode)) {
+    return ElMessage.warning('请输入 6 位邮箱验证码')
   }
   if (regForm.password.length < 6 || regForm.password.length > 32) {
     return ElMessage.warning('密码长度需为 6-32 位')
@@ -170,18 +217,15 @@ async function handleRegister() {
   if (regForm.password !== regForm.confirmPassword) {
     return ElMessage.warning('两次输入的密码不一致')
   }
-  if (!regForm.code) {
-    return ElMessage.warning('请输入验证码')
-  }
   regLoading.value = true
   try {
     await apiRegister({
       username: regForm.username,
       nickname: regForm.nickname,
+      email: regForm.email,
+      emailCode: regForm.emailCode,
       password: regForm.password,
       confirmPassword: regForm.confirmPassword,
-      code: regForm.code,
-      uuid: regUuid.value,
     })
     ElMessage.success('注册成功，请使用新账号登录')
     registerVisible.value = false
@@ -191,11 +235,13 @@ async function handleRegister() {
     // 错误提示已由 request 拦截器统一弹出
   } finally {
     regLoading.value = false
-    refreshRegCode()
   }
 }
 
 onMounted(refreshCode)
+onUnmounted(() => {
+  if (countdownTimer) window.clearInterval(countdownTimer)
+})
 </script>
 
 <style scoped>
@@ -288,6 +334,10 @@ onMounted(refreshCode)
   height: 40px;
   border-radius: 4px;
   cursor: pointer;
+  flex-shrink: 0;
+}
+.code-btn {
+  width: 116px;
   flex-shrink: 0;
 }
 .login-btn {

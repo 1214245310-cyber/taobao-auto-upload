@@ -1,5 +1,6 @@
 package com.loa.dto;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -20,11 +21,14 @@ public class RegisterRequest {
     @Size(max = 32, message = "昵称最长 32 个字符")
     private String nickname;
 
-    @NotBlank(message = "请输入验证码")
-    private String code;
+    @NotBlank(message = "请输入邮箱")
+    @Email(message = "邮箱格式不正确")
+    @Size(max = 128, message = "邮箱地址过长")
+    private String email;
 
-    @NotBlank(message = "验证码已失效，请刷新")
-    private String uuid;
+    @NotBlank(message = "请输入邮箱验证码")
+    @Pattern(regexp = "^\\d{6}$", message = "邮箱验证码为 6 位数字")
+    private String emailCode;
 
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
@@ -34,8 +38,8 @@ public class RegisterRequest {
     public void setConfirmPassword(String confirmPassword) { this.confirmPassword = confirmPassword; }
     public String getNickname() { return nickname; }
     public void setNickname(String nickname) { this.nickname = nickname; }
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
-    public String getUuid() { return uuid; }
-    public void setUuid(String uuid) { this.uuid = uuid; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getEmailCode() { return emailCode; }
+    public void setEmailCode(String emailCode) { this.emailCode = emailCode; }
 }

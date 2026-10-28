@@ -20,6 +20,17 @@ public class User {
     @Column(length = 64)
     private String nickname;
 
+    /** 邮箱：注册时必填，历史账号可能为空，故不做非空约束 */
+    @Column(length = 128)
+    private String email;
+
+    /** 邮箱是否已验证，"1" 已验证、"0" 未验证 */
+    @Column(length = 8)
+    private String emailVerified;
+
+    /** 最近一次登录时间 */
+    private LocalDateTime lastLoginAt;
+
     @Column(length = 32)
     private String role;
 
@@ -32,6 +43,7 @@ public class User {
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (status == null) status = "0";
+        if (emailVerified == null) emailVerified = "0";
     }
 
     public Long getId() { return id; }
@@ -42,6 +54,12 @@ public class User {
     public void setPassword(String password) { this.password = password; }
     public String getNickname() { return nickname; }
     public void setNickname(String nickname) { this.nickname = nickname; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public String getEmailVerified() { return emailVerified; }
+    public void setEmailVerified(String emailVerified) { this.emailVerified = emailVerified; }
+    public LocalDateTime getLastLoginAt() { return lastLoginAt; }
+    public void setLastLoginAt(LocalDateTime lastLoginAt) { this.lastLoginAt = lastLoginAt; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
     public String getStatus() { return status; }

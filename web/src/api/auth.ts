@@ -15,14 +15,19 @@ export function login(data: {
   return request.post('/auth/login', data)
 }
 
+// 发送邮箱验证码（QQ 邮箱 SMTP，后端 60 秒冷却）
+export function sendEmailCode(email: string) {
+  return request.post('/auth/email-code', { email })
+}
+
 // 注册：密码在后端以 BCrypt 存储，前端不做任何加密
 export function register(data: {
   username: string
   password: string
   confirmPassword: string
   nickname?: string
-  code: string
-  uuid: string
+  email: string
+  emailCode: string
 }) {
   return request.post('/auth/register', data)
 }
