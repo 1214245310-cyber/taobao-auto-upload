@@ -27,7 +27,7 @@
           />
         </el-form-item>
         <div class="remember-row">
-          <el-checkbox v-model="rememberAccount">记住账号</el-checkbox>
+          <span class="remember-tip">默认已记住账号</span>
           <el-checkbox v-model="rememberPassword">记住密码</el-checkbox>
         </div>
         <el-form-item>
@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { User, Lock, Key, Message } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -145,8 +145,7 @@ const regForm = reactive({
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
-// 记住账号 / 记住密码
-const rememberAccount = ref(false)
+// 记住密码（账号默认始终记住）
 const rememberPassword = ref(false)
 
 const REMEMBER_USER_KEY = 'loa_remember_username'
@@ -175,27 +174,18 @@ function deobfuscate(b64: string): string {
   }
 }
 
-// 读取已记住的账号/密码
+// 读取已记住的账号/密码（账号默认始终回填）
 function loadRemembered() {
   const u = localStorage.getItem(REMEMBER_USER_KEY)
-  if (u) {
-    form.username = u
-    rememberAccount.value = true
-  }
+  if (u) form.username = u
   const p = localStorage.getItem(REMEMBER_PWD_KEY)
   if (p) {
     const d = deobfuscate(p)
     if (d) {
       form.password = d
       rememberPassword.value = true
-      rememberAccount.value = true
     }
   }
-}
-
-// 勾选记住密码时，自动勾选记住账号
-function watchRemember() {
-  if (rememberPassword.value) rememberAccount.value = true
 }
 
 async function refreshCode() {
@@ -217,15 +207,10 @@ async function handleLogin() {
   try {
     await user.login(form.username, form.password, form.code, uuid.value)
     ElMessage.success('登录成功')
-    // 按勾选状态保存记住信息
-    if (rememberAccount.value) {
-      localStorage.setItem(REMEMBER_USER_KEY, form.username)
-    } else {
-      localStorage.removeItem(REMEMBER_USER_KEY)
-    }
+    // 账号默认始终记住；密码按勾选状态保存
+    localStorage.setItem(REMEMBER_USER_KEY, form.username)
     if (rememberPassword.value) {
       localStorage.setItem(REMEMBER_PWD_KEY, obfuscate(form.password))
-      localStorage.setItem(REMEMBER_USER_KEY, form.username)
     } else {
       localStorage.removeItem(REMEMBER_PWD_KEY)
     }
@@ -321,8 +306,6 @@ async function handleRegister() {
 onMounted(() => {
   loadRemembered()
   refreshCode()
-  // 记住密码勾选联动
-  watch(rememberPassword, watchRemember)
 })
 onUnmounted(() => {
   if (countdownTimer) window.clearInterval(countdownTimer)
@@ -458,6 +441,10 @@ onUnmounted(() => {
   margin: -4px 0 14px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.8);
+}
+.remember-tip {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
 }
 .remember-row :deep(.el-checkbox__label) {
   color: rgba(255, 255, 255, 0.8);
