@@ -6,6 +6,7 @@ import com.loa.dto.LoginRequest;
 import com.loa.dto.RegisterRequest;
 import com.loa.service.AuthService;
 import com.loa.service.EmailCodeService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import java.util.LinkedHashMap;
@@ -30,8 +31,9 @@ public class AuthController {
 
     /** 发送邮箱验证码（QQ 邮箱 SMTP） */
     @PostMapping("/email-code")
-    public R<Map<String, Object>> emailCode(@Valid @RequestBody EmailCodeRequest req) {
-        String email = emailCodeService.send(req.getEmail());
+    public R<Map<String, Object>> emailCode(@Valid @RequestBody EmailCodeRequest req,
+                                            HttpServletRequest request) {
+        String email = emailCodeService.send(req.getEmail(), clientIp(request));
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("email", email);
         m.put("ttl", EmailCodeService.TTL_MINUTES * 60);
@@ -53,5 +55,18 @@ public class AuthController {
     public R<Void> logout(@RequestHeader(value = "Authorization", required = false) String authorization) {
         authService.logout(authorization);
         return R.ok();
+    }
+
+    /** 取真实客户端 IP，Caddy 反代会带 X-Forwarded-For */
+    private String clientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        String real = request.getHeader("X-Real-IP");
+        if (real != null && !real.isBlank()) {
+            return real.trim();
+        }
+        return request.getRemoteAddr();
     }
 }

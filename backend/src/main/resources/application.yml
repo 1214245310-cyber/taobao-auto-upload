@@ -53,6 +53,9 @@ loa:
     # 发件人必须与上面的 username 一致，QQ 邮箱会校验
     from: ${LOA_MAIL_USERNAME:}
     from-name: LOA 淘宝上货系统
+    # 防刷限额，避免有人把服务器当发信机把 QQ 邮箱配额刷爆
+    daily-limit: 100
+    ip-hourly-limit: 5
 logging:
   level:
     root: INFO

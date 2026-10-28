@@ -1,14 +1,20 @@
 package com.loa.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 邮箱验证码：6 位数字、5 分钟有效、一次性使用。
- * 单邮箱 60 秒冷却、24 小时最多 10 次，防刷。
+ *
+ * 三层限额，防止有人拿服务器当发信机把 QQ 邮箱配额刷爆：
+ *   1. 单邮箱 60 秒冷却、24 小时最多 10 次
+ *   2. 单 IP 每小时最多 5 次
+ *   3. 全局每日上限（默认 100 封，留足 QQ 邮箱个人版配额余量）
  */
 @Service
 public class EmailCodeService {
@@ -17,6 +23,8 @@ public class EmailCodeService {
     public static final int COOLDOWN_SECONDS = 60;
     private static final int DAILY_LIMIT = 10;
     private static final int MAX_FAIL = 5;
+    private static final long HOUR = 3600_000L;
+    private static final long DAY = 24 * HOUR;
 
     private static final class Entry {
         String code;
@@ -27,21 +35,41 @@ public class EmailCodeService {
         int failCount;
     }
 
+    private static final class Window {
+        long start;
+        int count;
+    }
+
     private final Map<String, Entry> store = new ConcurrentHashMap<>();
+    private final Map<String, Window> ipWindows = new ConcurrentHashMap<>();
+    private final Object quotaLock = new Object();
+    private long globalDayStart = 0;
+    private int globalDayCount = 0;
+
     private final MailService mailService;
     private final SecureRandom random = new SecureRandom();
+    private final int globalDailyLimit;
+    private final int ipHourlyLimit;
 
-    public EmailCodeService(MailService mailService) {
+    public EmailCodeService(MailService mailService,
+                            @Value("${loa.mail.daily-limit:100}") int globalDailyLimit,
+                            @Value("${loa.mail.ip-hourly-limit:5}") int ipHourlyLimit) {
         this.mailService = mailService;
+        this.globalDailyLimit = globalDailyLimit;
+        this.ipHourlyLimit = ipHourlyLimit;
     }
 
     /** 发送验证码，返回规范化后的邮箱 */
-    public String send(String email) {
+    public String send(String email, String clientIp) {
         if (!mailService.isConfigured()) {
             throw new IllegalArgumentException("邮件服务未配置，请联系管理员设置发件邮箱与授权码");
         }
         String key = normalize(email);
         long now = System.currentTimeMillis();
+
+        acquireGlobalQuota(now);
+        acquireIpQuota(clientIp, now);
+
         Entry e = store.computeIfAbsent(key, k -> new Entry());
         synchronized (e) {
             if (e.lastSentAt > 0) {
@@ -51,7 +79,7 @@ public class EmailCodeService {
                     throw new IllegalArgumentException("发送太频繁，请 " + wait + " 秒后再试");
                 }
             }
-            if (e.windowStart == 0 || now - e.windowStart > 24L * 3600 * 1000) {
+            if (e.windowStart == 0 || now - e.windowStart > DAY) {
                 e.windowStart = now;
                 e.windowCount = 0;
             }
@@ -92,6 +120,46 @@ public class EmailCodeService {
                 throw new IllegalArgumentException("邮箱验证码错误");
             }
             store.remove(key);
+        }
+    }
+
+    /* ---------------- 配额 ---------------- */
+
+    private void acquireGlobalQuota(long now) {
+        synchronized (quotaLock) {
+            if (globalDayStart == 0 || now - globalDayStart > DAY) {
+                globalDayStart = now;
+                globalDayCount = 0;
+            }
+            if (globalDayCount >= globalDailyLimit) {
+                throw new IllegalArgumentException("系统今日邮件发送量已达上限（" + globalDailyLimit
+                        + " 封），请明天再试");
+            }
+            globalDayCount++;
+        }
+    }
+
+    private void acquireIpQuota(String ip, long now) {
+        if (ip == null || ip.isBlank()) {
+            return;
+        }
+        // 顺带清理过期窗口，避免 Map 无限增长
+        Iterator<Map.Entry<String, Window>> it = ipWindows.entrySet().iterator();
+        while (it.hasNext()) {
+            if (now - it.next().getValue().start > HOUR) {
+                it.remove();
+            }
+        }
+        Window w = ipWindows.computeIfAbsent(ip, k -> new Window());
+        synchronized (w) {
+            if (w.start == 0 || now - w.start > HOUR) {
+                w.start = now;
+                w.count = 0;
+            }
+            if (w.count >= ipHourlyLimit) {
+                throw new IllegalArgumentException("操作过于频繁，请稍后再试");
+            }
+            w.count++;
         }
     }
 
