@@ -223,10 +223,13 @@ onMounted(refreshCode)
 .brand-pane {
   position: relative;
   width: 320px;
+  min-height: 420px;
   flex-shrink: 0;
   background: #1f2937;
 }
 .brand-photo {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
