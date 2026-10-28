@@ -1,21 +1,22 @@
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-
 # 运行时产物
 *.log
-parse_service/webui.port
+*.tmp
 
-# IDEA 易变文件（工程配置保留，仅忽略工作区状态）
-.idea/workspace.xml
-.idea/tasks.xml
+# IDEA
+.idea/
+*.iml
 
 # Node / 前端构建产物
 web/node_modules/
 web/dist/
 *.local
+
+# Maven
+backend/target/
+
+# 本地数据库文件
+data/
+backend/data/
 
 # 逆向研究文档：含对第三方系统的分析，不随公开仓库发布（本地保留）
 docs/
@@ -23,4 +24,3 @@ docs/
 # 系统
 Thumbs.db
 .DS_Store
-backend/target/
