@@ -1,3 +1,7 @@
+# 默认即生产配置（服务器 systemd 不指定 profile 时走这里）
+# 本地开发请改用 profile：
+#   dev   -> 内存库，重启清空，开 H2 控制台
+#   local -> 文件库，数据保留，开 H2 控制台
 server:
   port: 8081
 spring:

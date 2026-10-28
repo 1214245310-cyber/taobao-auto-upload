@@ -1,0 +1,35 @@
+# 本地开发 profile：内存库，每次启动清空重建，适合反复跑测试
+#
+# 启动方式（任选其一）：
+#   mvn spring-boot:run -Dspring-boot.run.profiles=dev
+#   java -jar target/loa-backend-0.1.0.jar --spring.profiles.active=dev
+#   IDEA：Run Configuration -> Active profiles 填 dev
+#
+# 启动后打开 http://localhost:8081/h2-console 即可写 SQL、看表、建 schema
+# 连接参数：JDBC URL 填 jdbc:h2:mem:loa_dev  用户名 sa  密码留空
+spring:
+  datasource:
+    url: jdbc:h2:mem:loa_dev;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop      # 启动建表、退出删表，保证每次都是干净环境
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false   # 只允许本机访问
+logging:
+  level:
+    root: INFO
+    com.loa: DEBUG
+  file:
+    name: ${user.dir}/loa-dev.log   # 写到项目根目录，不碰 /opt/loa/logs

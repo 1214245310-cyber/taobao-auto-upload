@@ -1,0 +1,31 @@
+# 本地 profile：文件库，数据在多次重启之间保留，行为最接近服务器
+#
+# 启动方式：
+#   mvn spring-boot:run -Dspring-boot.run.profiles=local
+#   IDEA：Run Configuration -> Active profiles 填 local
+#
+# 数据库文件：backend/data/loa.mv.db（已在 .gitignore 中忽略）
+# 控制台：http://localhost:8081/h2-console
+# 连接参数：JDBC URL 填 jdbc:h2:file:./data/loa  用户名 sa  密码留空
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/loa;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update           # 保留数据，只补新增的表/字段
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
+logging:
+  level:
+    root: INFO
+    com.loa: DEBUG
+  file:
+    name: ${user.dir}/loa-local.log
