@@ -40,6 +40,12 @@ const routes: RouteRecordRaw[] = [
           },
         ],
       },
+      {
+        path: 'system/user',
+        name: 'UserManage',
+        component: () => import('@/views/user/index.vue'),
+        meta: { title: '用户管理' },
+      },
     ],
   },
   {

@@ -4,6 +4,7 @@ import com.loa.dto.RegisterRequest;
 import com.loa.entity.User;
 import com.loa.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
@@ -196,5 +197,98 @@ public class AuthService {
         } catch (Exception e) {
             return "";
         }
+    }
+
+    /**
+     * 用户列表（全量，按 id 倒序，前端自行分页）。
+     * 仅返回必要字段，密码等敏感信息绝不外泄。
+     */
+    public List<Map<String, Object>> listUsers() {
+        List<User> users = userRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+        List<Map<String, Object>> list = new ArrayList<>();
+        for (User u : users) {
+            Map<String, Object> m = new LinkedHashMap<>();
+            m.put("id", u.getId());
+            m.put("username", u.getUsername());
+            m.put("nickname", u.getNickname() == null ? "" : u.getNickname());
+            m.put("email", u.getEmail() == null ? "" : u.getEmail());
+            m.put("emailVerified", u.getEmailVerified() == null ? "0" : u.getEmailVerified());
+            m.put("avatar", u.getAvatar() == null ? "" : u.getAvatar());
+            m.put("role", u.getRole() == null ? "USER" : u.getRole());
+            m.put("status", u.getStatus() == null ? "0" : u.getStatus());
+            m.put("remark", u.getRemark() == null ? "" : u.getRemark());
+            m.put("createdAt", u.getCreatedAt() == null ? "" : u.getCreatedAt().toString());
+            m.put("lastLoginAt", u.getLastLoginAt() == null ? "" : u.getLastLoginAt().toString());
+            list.add(m);
+        }
+        return list;
+    }
+
+    /**
+     * 管理员后台新增用户（无需邮箱验证码）。
+     * 邮箱选填；用户名/密码规则与注册一致。
+     */
+    public Map<String, Object> addUser(String username, String nickname, String email,
+                                       String password, String role) {
+        String uname = username == null ? "" : username.trim();
+        if (!uname.matches("^[a-zA-Z0-9_]{3,20}$")) {
+            throw new IllegalArgumentException("用户名需为 3-20 位字母、数字或下划线");
+        }
+        if (userRepository.findByUsername(uname).isPresent()) {
+            throw new IllegalArgumentException("用户名「" + uname + "」已存在");
+        }
+        if (password == null || password.length() < 6 || password.length() > 32) {
+            throw new IllegalArgumentException("密码长度需为 6-32 位");
+        }
+        User u = new User();
+        u.setUsername(uname);
+        u.setPassword(passwordEncoder.encode(password));
+        u.setNickname(nickname == null || nickname.isBlank() ? uname : nickname.trim());
+        if (email != null && !email.isBlank()) {
+            String em = email.trim().toLowerCase();
+            if (userRepository.existsByEmail(em)) {
+                throw new IllegalArgumentException("邮箱「" + em + "」已被使用");
+            }
+            u.setEmail(em);
+            u.setEmailVerified("0");
+        }
+        u.setRole("ADMIN".equalsIgnoreCase(role) ? "ADMIN" : "USER");
+        u.setStatus("0");
+        userRepository.save(u);
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", u.getId());
+        m.put("username", u.getUsername());
+        return m;
+    }
+
+    /**
+     * 当前登录用户修改自己的密码，需校验原密码。
+     * 历史明文密码会在校验时自动升级为 BCrypt。
+     */
+    public void changePassword(String authorization, String oldPassword, String newPassword) {
+        User user = currentUser(authorization);
+        if (!matchesAndMaybeUpgrade(user, oldPassword)) {
+            throw new IllegalArgumentException("原密码错误");
+        }
+        if (newPassword == null || newPassword.length() < 6 || newPassword.length() > 32) {
+            throw new IllegalArgumentException("新密码长度需为 6-32 位");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    /**
+     * 管理员重置他人密码（不需要原密码），同时清空失败计数与锁定。
+     */
+    public void resetPassword(Long userId, String newPassword) {
+        User u = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+        if (newPassword == null || newPassword.length() < 6 || newPassword.length() > 32) {
+            throw new IllegalArgumentException("新密码长度需为 6-32 位");
+        }
+        u.setPassword(passwordEncoder.encode(newPassword));
+        u.setLoginFailCount(0);
+        u.setLockedUntil(null);
+        userRepository.save(u);
     }
 }
