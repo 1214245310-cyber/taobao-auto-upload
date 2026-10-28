@@ -2,7 +2,9 @@ package com.loa.controller;
 
 import com.loa.common.R;
 import com.loa.dto.LoginRequest;
+import com.loa.dto.RegisterRequest;
 import com.loa.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
@@ -26,8 +28,14 @@ public class AuthController {
         return R.ok(authService.login(req.getUsername(), req.getPassword(), req.getCode(), req.getUuid()));
     }
 
+    @PostMapping("/register")
+    public R<Map<String, Object>> register(@Valid @RequestBody RegisterRequest req) {
+        return R.ok(authService.register(req));
+    }
+
     @PostMapping("/logout")
-    public R<Void> logout() {
+    public R<Void> logout(@RequestHeader(value = "Authorization", required = false) String authorization) {
+        authService.logout(authorization);
         return R.ok();
     }
 }

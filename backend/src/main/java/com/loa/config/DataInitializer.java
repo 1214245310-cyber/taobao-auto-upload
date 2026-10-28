@@ -14,15 +14,18 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final ForbiddenWordRepository forbiddenWordRepository;
+    private final PasswordEncoder passwordEncoder;
     private final String adminUsername;
     private final String adminPassword;
 
     public DataInitializer(UserRepository userRepository,
                            ForbiddenWordRepository forbiddenWordRepository,
+                           PasswordEncoder passwordEncoder,
                            @Value("${loa.admin.username:admin}") String adminUsername,
                            @Value("${loa.admin.password:admin123}") String adminPassword) {
         this.userRepository = userRepository;
         this.forbiddenWordRepository = forbiddenWordRepository;
+        this.passwordEncoder = passwordEncoder;
         this.adminUsername = adminUsername;
         this.adminPassword = adminPassword;
     }
@@ -32,9 +35,10 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.findByUsername(adminUsername).isEmpty()) {
             User u = new User();
             u.setUsername(adminUsername);
-            u.setPassword(adminPassword);
+            u.setPassword(passwordEncoder.encode(adminPassword));
             u.setNickname("管理员");
             u.setRole("ADMIN");
+            u.setStatus("0");
             userRepository.save(u);
         }
         if (forbiddenWordRepository.count() == 0) {
