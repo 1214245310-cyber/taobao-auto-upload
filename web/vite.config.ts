@@ -14,8 +14,8 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/prod-api': {
-        target: 'https://jgoa.aijng.com',
+      '/api': {
+        target: 'http://127.0.0.1:8081',
         changeOrigin: true,
         // 原系统接口前缀即为 /prod-api，不做 rewrite
       },

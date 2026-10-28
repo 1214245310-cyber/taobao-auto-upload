@@ -1,0 +1,36 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: loa-backend
+  datasource:
+    url: jdbc:h2:file:/opt/loa/data/loa;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  h2:
+    console:
+      enabled: false
+  jackson:
+    default-property-inclusion: non_null
+loa:
+  parse:
+    provider: mock
+    third-party:
+      base-url: ""
+      access-token: ""
+  admin:
+    username: admin
+    password: admin123
+  session:
+    ttl-seconds: 7200
+logging:
+  level:
+    root: INFO
+    com.loa: INFO
+  file:
+    name: /opt/loa/logs/loa-api.log

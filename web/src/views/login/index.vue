@@ -46,8 +46,8 @@ const form = reactive({ username: '', password: '', code: '' })
 
 async function refreshCode() {
   const res = await user.fetchCode()
-  codeImg.value = 'data:image/png;base64,' + res.img
-  uuid.value = res.uuid
+  codeImg.value = 'data:image/png;base64,' + res.data.img
+  uuid.value = res.data.uuid
 }
 
 async function handleLogin() {
