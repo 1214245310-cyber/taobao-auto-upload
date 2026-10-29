@@ -17,7 +17,7 @@ export function addForbiddenWord(data: {
 
 export function updateForbiddenWord(data: {
   id: number
-  word: string
+  word?: string
   category?: string
   level?: number
   remark?: string

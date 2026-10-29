@@ -3,89 +3,186 @@
     <div class="page-head">
       <div>
         <h2>违禁词管理</h2>
-        <p class="sub">解析商品时自动校验标题，命中即提示。此处记录每个词是谁添加的。</p>
+        <p class="sub">解析商品时自动校验标题，命中即提示。分类、等级、状态、备注可在表格里直接改。</p>
       </div>
-      <el-button v-if="isAdmin" type="primary" :icon="Plus" @click="openAdd">新增违禁词</el-button>
+      <el-button type="primary" :icon="Plus" @click="openAdd">新增违禁词</el-button>
     </div>
 
-    <el-card shadow="never">
-      <el-table :data="words" v-loading="loading" stripe>
-        <el-table-column prop="word" label="违禁词" min-width="140">
+    <!-- 概览 -->
+    <div class="stat-row">
+      <div class="stat">
+        <span class="stat-num">{{ stats.total }}</span>
+        <span class="stat-label">总词数</span>
+      </div>
+      <div class="stat on">
+        <span class="stat-num">{{ stats.on }}</span>
+        <span class="stat-label">已启用</span>
+      </div>
+      <div class="stat off">
+        <span class="stat-num">{{ stats.off }}</span>
+        <span class="stat-label">已停用</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">{{ stats.level3 }}</span>
+        <span class="stat-label">违规词</span>
+      </div>
+    </div>
+
+    <el-card shadow="never" class="table-card">
+      <div class="toolbar">
+        <el-input
+          v-model="keyword"
+          placeholder="搜索违禁词 / 分类 / 添加人"
+          :prefix-icon="Search"
+          clearable
+          class="search"
+        />
+        <el-radio-group v-model="statusFilter" size="default">
+          <el-radio-button value="all">全部</el-radio-button>
+          <el-radio-button value="1">启用</el-radio-button>
+          <el-radio-button value="0">停用</el-radio-button>
+        </el-radio-group>
+        <span class="count">共 {{ filtered.length }} 条</span>
+      </div>
+
+      <el-table :data="filtered" v-loading="loading" stripe empty-text="还没有违禁词，点右上角新增">
+        <el-table-column label="违禁词" min-width="150">
           <template #default="{ row }">
             <span class="word">{{ row.word }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="category" label="分类" width="110">
-          <template #default="{ row }">{{ row.category || '—' }}</template>
-        </el-table-column>
-        <el-table-column label="等级" width="120">
+
+        <el-table-column label="分类" width="140">
           <template #default="{ row }">
-            <el-tag :type="levelTag(row.level)" size="small">{{ levelText(row.level) }}</el-tag>
+            <el-select
+              v-model="row.category"
+              size="small"
+              filterable
+              allow-create
+              default-first-option
+              placeholder="未分类"
+              class="cell-select"
+              @change="(v: string) => patch(row, 'category', v)"
+            >
+              <el-option v-for="c in categoryOptions" :key="c" :label="c" :value="c" />
+            </el-select>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="90">
+
+        <el-table-column label="等级" width="140">
           <template #default="{ row }">
-            <el-tag :type="row.enabled === '1' ? 'success' : 'info'" size="small">
-              {{ row.enabled === '1' ? '启用' : '停用' }}
-            </el-tag>
+            <el-select
+              v-model="row.level"
+              size="small"
+              class="cell-select"
+              :class="'lv-' + row.level"
+              @change="(v: number) => patch(row, 'level', v)"
+            >
+              <el-option label="违规词" :value="3" />
+              <el-option label="敏感词" :value="2" />
+              <el-option label="平台禁用词" :value="1" />
+            </el-select>
           </template>
         </el-table-column>
-        <el-table-column label="添加人" width="130">
+
+        <el-table-column label="状态" width="112">
+          <template #default="{ row }">
+            <el-select
+              v-model="row.enabled"
+              size="small"
+              class="cell-select"
+              :class="row.enabled === '1' ? 'st-on' : 'st-off'"
+              @change="(v: string) => patch(row, 'enabled', v)"
+            >
+              <el-option label="启用" value="1" />
+              <el-option label="停用" value="0" />
+            </el-select>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="备注" min-width="170">
+          <template #default="{ row }">
+            <el-input
+              v-model="row.remark"
+              size="small"
+              placeholder="点击填写"
+              maxlength="255"
+              class="cell-input"
+              @change="(v: string) => patch(row, 'remark', v)"
+            />
+          </template>
+        </el-table-column>
+
+        <el-table-column label="添加人" width="110">
           <template #default="{ row }">
             <span :class="{ sys: row.createdBy === 'system' }">{{ row.createdBy || '—' }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="添加时间" min-width="165">
+
+        <el-table-column label="添加时间" width="165">
           <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="140">
-          <template #default="{ row }">{{ row.remark || '—' }}</template>
-        </el-table-column>
-        <el-table-column v-if="isAdmin" label="操作" width="200" fixed="right">
+
+        <el-table-column label="操作" width="130" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link :type="row.enabled === '1' ? 'warning' : 'success'" @click="toggle(row)">
-              {{ row.enabled === '1' ? '停用' : '启用' }}
-            </el-button>
             <el-button link type="danger" @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </el-card>
 
-    <el-dialog v-model="addVisible" :title="editingId ? '编辑违禁词' : '新增违禁词'" width="440px" @closed="resetAdd">
-      <el-form :model="addForm" label-width="80px">
+    <!-- 新增 / 改词 -->
+    <el-dialog
+      v-model="dialogVisible"
+      :title="editingId ? '编辑违禁词' : '新增违禁词'"
+      width="440px"
+      @closed="resetForm"
+    >
+      <el-form :model="form" label-width="80px">
         <el-form-item label="违禁词" required>
-          <el-input v-model="addForm.word" placeholder="如：最便宜、绝对、包治百病" maxlength="64" />
+          <el-input
+            v-model="form.word"
+            placeholder="如：最便宜、绝对、包治百病"
+            maxlength="64"
+            @keyup.enter="handleSubmit"
+          />
         </el-form-item>
-        <el-form-item label="分类">
-          <el-select v-model="addForm.category" style="width: 100%" filterable allow-create default-first-option placeholder="选择或直接输入">
-            <el-option label="极限词" value="极限词" />
-            <el-option label="资质词" value="资质词" />
-            <el-option label="功效词" value="功效词" />
-            <el-option label="品牌词" value="品牌词" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="等级">
-          <el-select v-model="addForm.level" style="width: 100%">
-            <el-option label="违规词（最严重）" :value="3" />
-            <el-option label="敏感词" :value="2" />
-            <el-option label="平台禁用词" :value="1" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-radio-group v-model="addForm.enabled">
-            <el-radio value="1">启用</el-radio>
-            <el-radio value="0">停用</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="addForm.remark" type="textarea" :rows="2" placeholder="选填，如：来源、依据" maxlength="255" />
-        </el-form-item>
+        <template v-if="!editingId">
+          <el-form-item label="分类">
+            <el-select
+              v-model="form.category"
+              style="width: 100%"
+              filterable
+              allow-create
+              default-first-option
+              placeholder="选择或直接输入"
+            >
+              <el-option v-for="c in categoryOptions" :key="c" :label="c" :value="c" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="等级">
+            <el-select v-model="form.level" style="width: 100%">
+              <el-option label="违规词（最严重）" :value="3" />
+              <el-option label="敏感词" :value="2" />
+              <el-option label="平台禁用词" :value="1" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="状态">
+            <el-select v-model="form.enabled" style="width: 100%">
+              <el-option label="启用" value="1" />
+              <el-option label="停用" value="0" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="备注">
+            <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="选填" maxlength="255" />
+          </el-form-item>
+        </template>
+        <p v-else class="tip">分类、等级、状态、备注请在表格里直接选择修改。</p>
       </el-form>
       <template #footer>
-        <el-button @click="addVisible = false">取消</el-button>
-        <el-button type="primary" :loading="addLoading" @click="handleSubmit">确定</el-button>
+        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -93,10 +190,14 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { addForbiddenWord, deleteForbiddenWord, getForbiddenWords, toggleForbiddenWord, updateForbiddenWord } from '@/api/forbidden-word'
-import { useUserStore } from '@/store/user'
+import {
+  addForbiddenWord,
+  deleteForbiddenWord,
+  getForbiddenWords,
+  updateForbiddenWord,
+} from '@/api/forbidden-word'
 
 interface WordRow {
   id: number
@@ -109,26 +210,41 @@ interface WordRow {
   createdAt: string
 }
 
-const user = useUserStore()
-const isAdmin = computed(() => String(user.userInfo.role || '').toUpperCase() === 'ADMIN')
-
 const words = ref<WordRow[]>([])
 const loading = ref(false)
-const addVisible = ref(false)
-const addLoading = ref(false)
+const keyword = ref('')
+const statusFilter = ref('all')
+const dialogVisible = ref(false)
+const submitting = ref(false)
 const editingId = ref<number | null>(null)
-const addForm = reactive({ word: '', category: '极限词', level: 2, enabled: '1', remark: '' })
+const form = reactive({ word: '', category: '极限词', level: 2, enabled: '1', remark: '' })
 
-function levelText(level: number) {
-  if (level === 3) return '违规词'
-  if (level === 1) return '平台禁用词'
-  return '敏感词'
-}
-function levelTag(level: number) {
-  if (level === 3) return 'danger'
-  if (level === 2) return 'warning'
-  return 'info'
-}
+const categoryOptions = computed(() => {
+  const set = new Set(['极限词', '资质词', '功效词', '品牌词'])
+  words.value.forEach((w) => w.category && set.add(w.category))
+  return Array.from(set)
+})
+
+const filtered = computed(() => {
+  const kw = keyword.value.trim().toLowerCase()
+  return words.value.filter((w) => {
+    const hitKw =
+      !kw ||
+      w.word.toLowerCase().includes(kw) ||
+      (w.category || '').toLowerCase().includes(kw) ||
+      (w.createdBy || '').toLowerCase().includes(kw)
+    const hitSt = statusFilter.value === 'all' || w.enabled === statusFilter.value
+    return hitKw && hitSt
+  })
+})
+
+const stats = computed(() => ({
+  total: words.value.length,
+  on: words.value.filter((w) => w.enabled === '1').length,
+  off: words.value.filter((w) => w.enabled !== '1').length,
+  level3: words.value.filter((w) => w.level === 3).length,
+}))
+
 function formatTime(v: string) {
   if (!v) return '—'
   return v.replace('T', ' ').slice(0, 19)
@@ -146,76 +262,62 @@ async function load() {
   }
 }
 
+/** 表格内直接改单个字段：乐观更新，失败回滚 */
+async function patch(row: WordRow, field: 'category' | 'level' | 'enabled' | 'remark', value: any) {
+  try {
+    const res = await updateForbiddenWord({ id: row.id, [field]: value })
+    if (res.data && typeof res.data === 'object') Object.assign(row, res.data)
+    ElMessage.success('已更新')
+  } catch {
+    load()
+  }
+}
+
 function openAdd() {
   editingId.value = null
-  addForm.word = ''
-  addForm.category = '极限词'
-  addForm.level = 2
-  addForm.enabled = '1'
-  addForm.remark = ''
-  addVisible.value = true
+  form.word = ''
+  form.category = '极限词'
+  form.level = 2
+  form.enabled = '1'
+  form.remark = ''
+  dialogVisible.value = true
 }
 
 function openEdit(row: WordRow) {
   editingId.value = row.id
-  addForm.word = row.word
-  addForm.category = row.category || ''
-  addForm.level = row.level || 2
-  addForm.enabled = row.enabled === '1' ? '1' : '0'
-  addForm.remark = row.remark || ''
-  addVisible.value = true
+  form.word = row.word
+  dialogVisible.value = true
 }
 
-function resetAdd() {
+function resetForm() {
   editingId.value = null
-  addForm.word = ''
-  addForm.category = '极限词'
-  addForm.level = 2
-  addForm.enabled = '1'
-  addForm.remark = ''
+  form.word = ''
 }
 
 async function handleSubmit() {
-  const word = addForm.word.trim()
+  const word = form.word.trim()
   if (!word) return ElMessage.warning('请输入违禁词')
-  addLoading.value = true
+  submitting.value = true
   try {
     if (editingId.value) {
-      await updateForbiddenWord({
-        id: editingId.value,
-        word,
-        category: addForm.category || undefined,
-        level: addForm.level,
-        enabled: addForm.enabled,
-        remark: addForm.remark || undefined,
-      })
+      await updateForbiddenWord({ id: editingId.value, word })
       ElMessage.success('已保存')
     } else {
       await addForbiddenWord({
         word,
-        category: addForm.category || undefined,
-        level: addForm.level,
-        remark: addForm.remark || undefined,
-        enabled: addForm.enabled,
+        category: form.category || undefined,
+        level: form.level,
+        remark: form.remark || undefined,
+        enabled: form.enabled,
       })
       ElMessage.success('已添加')
     }
-    addVisible.value = false
+    dialogVisible.value = false
     load()
   } catch {
     // 拦截器已提示
   } finally {
-    addLoading.value = false
-  }
-}
-
-async function toggle(row: WordRow) {
-  try {
-    await toggleForbiddenWord(row.id, row.enabled !== '1')
-    ElMessage.success(row.enabled === '1' ? '已停用' : '已启用')
-    load()
-  } catch {
-    // 拦截器已提示
+    submitting.value = false
   }
 }
 
@@ -238,16 +340,7 @@ async function remove(row: WordRow) {
   }
 }
 
-onMounted(async () => {
-  if (!user.userInfo.role) {
-    try {
-      await user.fetchInfo()
-    } catch {
-      // 忽略，按非管理员渲染
-    }
-  }
-  load()
-})
+onMounted(load)
 </script>
 
 <style scoped>
@@ -266,10 +359,117 @@ onMounted(async () => {
   color: #909399;
   font-size: 13px;
 }
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #ebeef5;
+}
+.stat-num {
+  font-size: 22px;
+  font-weight: 700;
+  color: #303133;
+  line-height: 1.2;
+}
+.stat-label {
+  font-size: 12px;
+  color: #909399;
+}
+.stat.on .stat-num {
+  color: #67c23a;
+}
+.stat.off .stat-num {
+  color: #909399;
+}
+
+.table-card {
+  border-radius: 10px;
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.search {
+  width: 260px;
+}
+.count {
+  margin-left: auto;
+  font-size: 13px;
+  color: #909399;
+}
+
 .word {
   font-weight: 600;
 }
 .sys {
   color: #909399;
+}
+.tip {
+  margin: 0;
+  font-size: 12px;
+  color: #909399;
+}
+
+/* 表格内下拉/输入：弱化成可点的单元格 */
+.cell-select {
+  width: 100%;
+}
+.cell-select :deep(.el-select__wrapper) {
+  box-shadow: none;
+  background: transparent;
+  padding: 0 8px;
+  min-height: 28px;
+}
+.cell-select :deep(.el-select__wrapper:hover) {
+  background: #f5f7fa;
+}
+.cell-select :deep(.el-select__selected-item) {
+  font-size: 13px;
+}
+.st-on :deep(.el-select__selected-item) {
+  color: #67c23a;
+  font-weight: 600;
+}
+.st-off :deep(.el-select__selected-item) {
+  color: #909399;
+}
+.lv-3 :deep(.el-select__selected-item) {
+  color: #f56c6c;
+  font-weight: 600;
+}
+.lv-2 :deep(.el-select__selected-item) {
+  color: #e6a23c;
+  font-weight: 600;
+}
+.lv-1 :deep(.el-select__selected-item) {
+  color: #909399;
+}
+
+.cell-input :deep(.el-input__wrapper) {
+  box-shadow: none;
+  background: transparent;
+  padding: 0 8px;
+}
+.cell-input :deep(.el-input__wrapper:hover) {
+  background: #f5f7fa;
+}
+
+@media (max-width: 900px) {
+  .stat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>

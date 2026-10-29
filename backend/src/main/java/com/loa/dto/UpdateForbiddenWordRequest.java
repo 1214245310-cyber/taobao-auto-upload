@@ -2,17 +2,16 @@ package com.loa.dto;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-/** 编辑违禁词请求 */
+/** 编辑违禁词请求（部分更新：未传的字段保持不变） */
 public class UpdateForbiddenWordRequest {
 
     @NotNull(message = "缺少 id")
     private Long id;
 
-    @NotBlank(message = "违禁词不能为空")
+    /** 为空则不改动违禁词本身 */
     @Size(max = 64, message = "违禁词最长 64 个字符")
     private String word;
 

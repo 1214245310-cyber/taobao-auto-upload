@@ -13,7 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/** 违禁词管理。读取对所有登录用户开放，写操作仅 ADMIN。 */
+/** 违禁词管理。所有登录用户均可查看与维护（新增/编辑/启停/删除）。 */
 @Service
 public class ForbiddenWordService {
 
@@ -41,7 +41,7 @@ public class ForbiddenWordService {
 
     @Transactional
     public Map<String, Object> add(String authorization, AddForbiddenWordRequest req) {
-        User operator = requireAdmin(authorization);
+        User operator = authService.currentUser(authorization);
         String word = req.getWord().trim();
         if (repository.findByWord(word).isPresent()) {
             throw new IllegalArgumentException("违禁词「" + word + "」已存在");
@@ -55,21 +55,24 @@ public class ForbiddenWordService {
         return toMap(repository.save(entity));
     }
 
+    /** 部分更新：未传的字段保持不变，便于表格内下拉直接改单个字段 */
     @Transactional
     public Map<String, Object> update(String authorization, UpdateForbiddenWordRequest req) {
-        requireAdmin(authorization);
+        authService.currentUser(authorization);
         ForbiddenWord w = repository.findById(req.getId())
                 .orElseThrow(() -> new IllegalArgumentException("违禁词不存在"));
-        String word = req.getWord().trim();
-        repository.findByWord(word).ifPresent(other -> {
-            if (!other.getId().equals(w.getId())) {
-                throw new IllegalArgumentException("违禁词「" + word + "」已存在");
-            }
-        });
-        w.setWord(word);
-        w.setCategory(req.getCategory());
+        if (req.getWord() != null && !req.getWord().isBlank()) {
+            String word = req.getWord().trim();
+            repository.findByWord(word).ifPresent(other -> {
+                if (!other.getId().equals(w.getId())) {
+                    throw new IllegalArgumentException("违禁词「" + word + "」已存在");
+                }
+            });
+            w.setWord(word);
+        }
+        if (req.getCategory() != null) w.setCategory(req.getCategory());
         if (req.getLevel() != null) w.setLevel(req.getLevel());
-        w.setRemark(req.getRemark());
+        if (req.getRemark() != null) w.setRemark(req.getRemark());
         if (req.getEnabled() != null && !req.getEnabled().isBlank()) {
             w.setEnabled("0".equals(req.getEnabled()) ? "0" : "1");
         }
@@ -78,7 +81,7 @@ public class ForbiddenWordService {
 
     @Transactional
     public void setEnabled(String authorization, Long id, boolean enabled) {
-        requireAdmin(authorization);
+        authService.currentUser(authorization);
         ForbiddenWord w = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("违禁词不存在"));
         w.setEnabled(enabled ? "1" : "0");
@@ -87,19 +90,11 @@ public class ForbiddenWordService {
 
     @Transactional
     public void delete(String authorization, Long id) {
-        requireAdmin(authorization);
+        authService.currentUser(authorization);
         if (!repository.existsById(id)) {
             throw new IllegalArgumentException("违禁词不存在");
         }
         repository.deleteById(id);
-    }
-
-    private User requireAdmin(String authorization) {
-        User user = authService.currentUser(authorization);
-        if (!"ADMIN".equalsIgnoreCase(user.getRole())) {
-            throw new IllegalArgumentException("仅管理员可维护违禁词");
-        }
-        return user;
     }
 
     private Map<String, Object> toMap(ForbiddenWord w) {
