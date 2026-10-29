@@ -103,6 +103,21 @@ public class AuthService {
     }
 
     /**
+     * 注册发码前的校验：邮箱不能已被注册。
+     * 否则用户会收到信、填完 6 位码、点了注册才被告知"已被注册"，白发一封信还白耗配额。
+     */
+    public String assertEmailNotRegistered(String email) {
+        String key = email == null ? "" : email.trim().toLowerCase();
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("请输入邮箱");
+        }
+        if (userRepository.existsByEmail(key)) {
+            throw new IllegalArgumentException("邮箱「" + key + "」已注册，请直接登录；忘记密码可在登录页点「忘记密码？」");
+        }
+        return key;
+    }
+
+    /**
      * 忘记密码发码前的校验：账号与邮箱必须属于同一个用户。
      * 只凭邮箱就能重置密码太松，谁掌握邮箱就能接管账号；账号 + 绑定邮箱双要素才放行。
      */
@@ -503,7 +518,8 @@ public class AuthService {
         emailCodeService.send(email, clientIp, true);
     }
 
-    /** 用邮箱前缀生成一个没被占用的登录名，例如 xby@qq.com → xby、xby_2 */    private String deriveUsername(String email) {
+    /** 用邮箱前缀生成一个没被占用的登录名，例如 xby@qq.com → xby、xby_2 */
+    private String deriveUsername(String email) {
         String prefix = email.substring(0, email.indexOf('@')).replaceAll("[^a-zA-Z0-9_]", "");
         if (prefix.length() < 3) {
             prefix = prefix + "user";

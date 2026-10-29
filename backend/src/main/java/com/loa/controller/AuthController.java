@@ -31,11 +31,12 @@ public class AuthController {
         return R.ok(authService.createCaptcha());
     }
 
-    /** 发送邮箱验证码（QQ 邮箱 SMTP） */
+    /** 发送邮箱验证码（QQ 邮箱 SMTP）；注册场景下先确认邮箱未被注册，避免白发一封信 */
     @PostMapping("/email-code")
     public R<Map<String, Object>> emailCode(@Valid @RequestBody EmailCodeRequest req,
                                             HttpServletRequest request) {
-        String email = emailCodeService.send(req.getEmail(), clientIp(request));
+        String email = authService.assertEmailNotRegistered(req.getEmail());
+        emailCodeService.send(email, clientIp(request));
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("email", email);
         m.put("ttl", EmailCodeService.TTL_MINUTES * 60);
