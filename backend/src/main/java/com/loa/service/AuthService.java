@@ -159,9 +159,18 @@ public class AuthService {
         verifyCaptcha(code, uuid);
         // 账号一栏既可以是用户名，也可以是注册邮箱（只有绑过邮箱的账号才走得通）
         String account = username == null ? "" : username.trim();
-        User user = userRepository.findByUsername(account)
-                .or(() -> userRepository.findByEmail(account.toLowerCase()))
-                .orElseThrow(() -> new IllegalArgumentException("用户名或密码错误"));
+        User user = userRepository.findByUsername(account).orElse(null);
+        if (user == null) {
+            List<User> candidates = userRepository.findByEmailOrderByIdAsc(account.toLowerCase());
+            if (candidates.isEmpty()) {
+                throw new IllegalArgumentException("用户名或密码错误");
+            }
+            if (candidates.size() > 1) {
+                // 一个邮箱挂多个账号时无法判断该进哪家，直接说清楚，避免"登进去发现是别人的号"
+                throw new IllegalArgumentException("该邮箱关联了多个账号，请改用用户名登录");
+            }
+            user = candidates.get(0);
+        }
 
         // 失败次数过多时临时锁定，挡住对着一个账号硬试密码的脚本
         LocalDateTime now = LocalDateTime.now();
