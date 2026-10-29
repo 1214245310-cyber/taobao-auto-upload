@@ -27,6 +27,10 @@ public class ForbiddenWord {
     @Column(length = 255)
     private String remark;
 
+    /** 添加人用户名；系统初始化的种子词记为 "system" */
+    @Column(length = 64)
+    private String createdBy;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -64,6 +68,8 @@ public class ForbiddenWord {
     public void setEnabled(String enabled) { this.enabled = enabled; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

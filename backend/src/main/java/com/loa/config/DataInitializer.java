@@ -43,13 +43,16 @@ public class DataInitializer implements CommandLineRunner {
             userRepository.save(u);
         }
         if (forbiddenWordRepository.count() == 0) {
-            forbiddenWordRepository.saveAll(List.of(
+            List<ForbiddenWord> seeds = List.of(
                     new ForbiddenWord("最便宜", "极限词", 2),
                     new ForbiddenWord("第一", "极限词", 2),
                     new ForbiddenWord("绝对", "极限词", 2),
                     new ForbiddenWord("国家级", "资质词", 2),
                     new ForbiddenWord("包治百病", "功效词", 2)
-            ));
+            );
+            // 种子词无真实操作人，统一标记为 system
+            seeds.forEach(w -> w.setCreatedBy("system"));
+            forbiddenWordRepository.saveAll(seeds);
         }
     }
 }

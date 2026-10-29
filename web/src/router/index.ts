@@ -46,6 +46,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/user/index.vue'),
         meta: { title: '用户管理' },
       },
+      {
+        path: 'system/forbidden',
+        name: 'ForbiddenManage',
+        component: () => import('@/views/forbidden/index.vue'),
+        meta: { title: '违禁词管理' },
+      },
     ],
   },
   {
