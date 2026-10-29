@@ -3,6 +3,7 @@ package com.loa.service;
 import com.loa.common.UnauthorizedException;
 import com.loa.dto.RegisterRequest;
 import com.loa.dto.ResetPasswordByEmailRequest;
+import com.loa.dto.UpdateUserRequest;
 import com.loa.entity.User;
 import com.loa.entity.UserToken;
 import com.loa.repository.UserRepository;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -277,21 +279,136 @@ public class AuthService {
         List<User> users = userRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
         List<Map<String, Object>> list = new ArrayList<>();
         for (User u : users) {
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("id", u.getId());
-            m.put("username", u.getUsername());
-            m.put("nickname", u.getNickname() == null ? "" : u.getNickname());
-            m.put("email", u.getEmail() == null ? "" : u.getEmail());
-            m.put("emailVerified", u.getEmailVerified() == null ? "0" : u.getEmailVerified());
-            m.put("avatar", u.getAvatar() == null ? "" : u.getAvatar());
-            m.put("role", u.getRole() == null ? "USER" : u.getRole());
-            m.put("status", u.getStatus() == null ? "0" : u.getStatus());
-            m.put("remark", u.getRemark() == null ? "" : u.getRemark());
-            m.put("createdAt", u.getCreatedAt() == null ? "" : u.getCreatedAt().toString());
-            m.put("lastLoginAt", u.getLastLoginAt() == null ? "" : u.getLastLoginAt().toString());
-            list.add(m);
+            list.add(toUserMap(u));
         }
         return list;
+    }
+
+    private Map<String, Object> toUserMap(User u) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("id", u.getId());
+        m.put("username", u.getUsername());
+        m.put("nickname", u.getNickname() == null ? "" : u.getNickname());
+        m.put("email", u.getEmail() == null ? "" : u.getEmail());
+        m.put("emailVerified", u.getEmailVerified() == null ? "0" : u.getEmailVerified());
+        m.put("avatar", u.getAvatar() == null ? "" : u.getAvatar());
+        m.put("role", u.getRole() == null ? "USER" : u.getRole());
+        m.put("status", u.getStatus() == null ? "0" : u.getStatus());
+        m.put("remark", u.getRemark() == null ? "" : u.getRemark());
+        m.put("createdAt", u.getCreatedAt() == null ? "" : u.getCreatedAt().toString());
+        m.put("lastLoginAt", u.getLastLoginAt() == null ? "" : u.getLastLoginAt().toString());
+        return m;
+    }
+
+    /** 用户管理（增删改、重置密码）只对管理员开放 */
+    public User requireAdmin(String authorization) {
+        User u = currentUser(authorization);
+        if (!"ADMIN".equalsIgnoreCase(u.getRole())) {
+            throw new IllegalArgumentException("只有管理员可以管理用户");
+        }
+        return u;
+    }
+
+    private static final String EMAIL_RE = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$";
+
+    /**
+     * 编辑用户：昵称 / 邮箱 / 备注 / 角色 / 状态。
+     * 三条保护：不能停用自己、不能把最后一个管理员降级或删除。
+     */
+    @Transactional
+    public Map<String, Object> updateUser(String authorization, UpdateUserRequest req) {
+        User operator = requireAdmin(authorization);
+        User target = userRepository.findById(req.getId())
+                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+
+        if (req.getNickname() != null) {
+            String nickname = req.getNickname().trim();
+            target.setNickname(nickname.isEmpty() ? target.getUsername() : nickname);
+        }
+
+        if (req.getEmail() != null) {
+            String email = req.getEmail().trim().toLowerCase();
+            String current = target.getEmail() == null ? "" : target.getEmail().toLowerCase();
+            if (email.isEmpty()) {
+                // 解绑邮箱
+                target.setEmail(null);
+                target.setEmailVerified("0");
+            } else {
+                if (!email.matches(EMAIL_RE)) {
+                    throw new IllegalArgumentException("邮箱格式不正确");
+                }
+                if (!email.equals(current) && userRepository.existsByEmail(email)) {
+                    throw new IllegalArgumentException("邮箱「" + email + "」已被其他账号使用");
+                }
+                if (!email.equals(current)) {
+                    target.setEmail(email);
+                    // 管理员代填的邮箱先视为未验证；用户可用「忘记密码」发码自证
+                    target.setEmailVerified("0");
+                }
+            }
+        }
+
+        if (req.getRole() != null) {
+            String role = "ADMIN".equalsIgnoreCase(req.getRole()) ? "ADMIN" : "USER";
+            boolean downgrade = "ADMIN".equalsIgnoreCase(target.getRole()) && "USER".equals(role);
+            if (downgrade && countAdmins() <= 1) {
+                throw new IllegalArgumentException("系统至少要保留一个管理员");
+            }
+            target.setRole(role);
+        }
+
+        if (req.getStatus() != null) {
+            String status = "1".equals(req.getStatus()) ? "1" : "0";
+            if ("1".equals(status)) {
+                if (target.getId().equals(operator.getId())) {
+                    throw new IllegalArgumentException("不能停用当前登录的账号");
+                }
+                if ("ADMIN".equalsIgnoreCase(target.getRole()) && countActiveAdmins() <= 1) {
+                    throw new IllegalArgumentException("系统至少要保留一个可用管理员");
+                }
+            }
+            target.setStatus(status);
+            if ("1".equals(status)) {
+                // 停用后立刻踢下线
+                revokeTokens(target.getId());
+            }
+        }
+
+        if (req.getRemark() != null) {
+            String remark = req.getRemark().trim();
+            target.setRemark(remark.isEmpty() ? null : remark);
+        }
+
+        return toUserMap(userRepository.save(target));
+    }
+
+    /** 删除用户：不能删自己，也不能删掉最后一个管理员 */
+    @Transactional
+    public void deleteUser(String authorization, Long userId) {
+        User operator = requireAdmin(authorization);
+        User target = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+        if (target.getId().equals(operator.getId())) {
+            throw new IllegalArgumentException("不能删除当前登录的账号");
+        }
+        if ("ADMIN".equalsIgnoreCase(target.getRole()) && countAdmins() <= 1) {
+            throw new IllegalArgumentException("系统至少要保留一个管理员");
+        }
+        revokeTokens(target.getId());
+        userRepository.deleteById(target.getId());
+    }
+
+    private long countAdmins() {
+        return userRepository.findAll().stream()
+                .filter(u -> "ADMIN".equalsIgnoreCase(u.getRole()))
+                .count();
+    }
+
+    private long countActiveAdmins() {
+        return userRepository.findAll().stream()
+                .filter(u -> "ADMIN".equalsIgnoreCase(u.getRole()))
+                .filter(u -> !"1".equals(u.getStatus()))
+                .count();
     }
 
     /**

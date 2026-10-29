@@ -15,7 +15,7 @@
           <el-menu-item index="/goods/tb-item-publish">批量上新</el-menu-item>
           <el-menu-item index="/goods/parse">解析裂变</el-menu-item>
         </el-sub-menu>
-        <el-menu-item index="/system/user">
+        <el-menu-item v-if="isAdmin" index="/system/user">
           <el-icon><User /></el-icon>
           <span>用户管理</span>
         </el-menu-item>
@@ -81,6 +81,8 @@ const router = useRouter()
 const user = useUserStore()
 const activeMenu = computed(() => route.path)
 const title = computed(() => (route.meta.title as string) || '')
+// 用户管理涉及账号与角色，仅管理员可见
+const isAdmin = computed(() => user.userInfo.role === 'ADMIN')
 
 const avatar = computed(() => (user.userInfo.avatar as string) || loginPhoto)
 const userName = computed(

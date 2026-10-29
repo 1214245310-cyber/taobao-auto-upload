@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import Layout from '@/layout/index.vue'
 import { useUserStore } from '@/store/user'
 
@@ -83,6 +84,11 @@ router.beforeEach(async (to) => {
         return { path: '/auth/login', query: { redirect: to.fullPath } }
       }
     }
+  }
+  // 用户管理（账号、角色、停用、删除）只允许管理员进入
+  if (to.path.startsWith('/system/user') && user.userInfo.role !== 'ADMIN') {
+    ElMessage.warning('只有管理员可以访问用户管理')
+    return { path: '/company-screen' }
   }
   return true
 })
