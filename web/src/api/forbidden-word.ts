@@ -10,8 +10,20 @@ export function addForbiddenWord(data: {
   category?: string
   level?: number
   remark?: string
+  enabled?: string
 }) {
   return request.post('/system/forbidden-word/add', data)
+}
+
+export function updateForbiddenWord(data: {
+  id: number
+  word: string
+  category?: string
+  level?: number
+  remark?: string
+  enabled?: string
+}) {
+  return request.post('/system/forbidden-word/update', data)
 }
 
 export function toggleForbiddenWord(id: number, enabled: boolean) {

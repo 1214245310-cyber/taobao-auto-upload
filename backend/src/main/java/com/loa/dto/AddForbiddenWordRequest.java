@@ -23,6 +23,13 @@ public class AddForbiddenWordRequest {
     @Size(max = 255, message = "备注最长 255 个字符")
     private String remark;
 
+    /** "1" 启用、"0" 停用；为空默认启用 */
+    @Size(max = 8)
+    private String enabled;
+
+    public String getEnabled() { return enabled; }
+    public void setEnabled(String enabled) { this.enabled = enabled; }
+
     public String getWord() { return word; }
     public void setWord(String word) { this.word = word; }
     public String getCategory() { return category; }

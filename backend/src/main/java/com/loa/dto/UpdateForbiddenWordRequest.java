@@ -1,0 +1,45 @@
+package com.loa.dto;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+/** 编辑违禁词请求 */
+public class UpdateForbiddenWordRequest {
+
+    @NotNull(message = "缺少 id")
+    private Long id;
+
+    @NotBlank(message = "违禁词不能为空")
+    @Size(max = 64, message = "违禁词最长 64 个字符")
+    private String word;
+
+    @Size(max = 32, message = "分类最长 32 个字符")
+    private String category;
+
+    @Min(value = 1, message = "等级取值范围 1-3")
+    @Max(value = 3, message = "等级取值范围 1-3")
+    private Integer level;
+
+    @Size(max = 255, message = "备注最长 255 个字符")
+    private String remark;
+
+    /** "1" 启用、"0" 停用；为空则不改动 */
+    @Size(max = 8)
+    private String enabled;
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getWord() { return word; }
+    public void setWord(String word) { this.word = word; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
+    public Integer getLevel() { return level; }
+    public void setLevel(Integer level) { this.level = level; }
+    public String getRemark() { return remark; }
+    public void setRemark(String remark) { this.remark = remark; }
+    public String getEnabled() { return enabled; }
+    public void setEnabled(String enabled) { this.enabled = enabled; }
+}

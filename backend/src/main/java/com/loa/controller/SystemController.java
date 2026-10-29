@@ -25,10 +25,13 @@ public class SystemController {
         u.put("nickName", user.getNickname());
         u.put("avatar", user.getAvatar() == null ? "" : user.getAvatar());
         u.put("email", user.getEmail() == null ? "" : user.getEmail());
+        // 前端按角色控制按钮显隐，必须返回真实角色
+        String role = user.getRole() == null ? "USER" : user.getRole();
+        u.put("role", role);
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("user", u);
-        m.put("roles", List.of("admin"));
-        m.put("permissions", List.of("*:*:*"));
+        m.put("roles", List.of("ADMIN".equalsIgnoreCase(role) ? "admin" : "user"));
+        m.put("permissions", "ADMIN".equalsIgnoreCase(role) ? List.of("*:*:*") : List.of());
         return R.ok(m);
     }
 }

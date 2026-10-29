@@ -2,6 +2,7 @@ package com.loa.controller;
 
 import com.loa.common.R;
 import com.loa.dto.AddForbiddenWordRequest;
+import com.loa.dto.UpdateForbiddenWordRequest;
 import com.loa.service.ForbiddenWordService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +31,13 @@ public class ForbiddenWordController {
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @Valid @RequestBody AddForbiddenWordRequest req) {
         return R.ok(service.add(authorization, req));
+    }
+
+    @PostMapping("/update")
+    public R<Map<String, Object>> update(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @Valid @RequestBody UpdateForbiddenWordRequest req) {
+        return R.ok(service.update(authorization, req));
     }
 
     @PostMapping("/toggle")

@@ -41,8 +41,9 @@
         <el-table-column prop="remark" label="备注" min-width="140">
           <template #default="{ row }">{{ row.remark || '—' }}</template>
         </el-table-column>
-        <el-table-column v-if="isAdmin" label="操作" width="150" fixed="right">
+        <el-table-column v-if="isAdmin" label="操作" width="200" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link :type="row.enabled === '1' ? 'warning' : 'success'" @click="toggle(row)">
               {{ row.enabled === '1' ? '停用' : '启用' }}
             </el-button>
@@ -52,7 +53,7 @@
       </el-table>
     </el-card>
 
-    <el-dialog v-model="addVisible" title="新增违禁词" width="440px" @closed="resetAdd">
+    <el-dialog v-model="addVisible" :title="editingId ? '编辑违禁词' : '新增违禁词'" width="440px" @closed="resetAdd">
       <el-form :model="addForm" label-width="80px">
         <el-form-item label="违禁词" required>
           <el-input v-model="addForm.word" placeholder="如：最便宜、绝对、包治百病" maxlength="64" />
@@ -72,13 +73,19 @@
             <el-option label="平台禁用词" :value="1" />
           </el-select>
         </el-form-item>
+        <el-form-item label="状态">
+          <el-radio-group v-model="addForm.enabled">
+            <el-radio value="1">启用</el-radio>
+            <el-radio value="0">停用</el-radio>
+          </el-radio-group>
+        </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="addForm.remark" type="textarea" :rows="2" placeholder="选填，如：来源、依据" maxlength="255" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="addVisible = false">取消</el-button>
-        <el-button type="primary" :loading="addLoading" @click="handleAdd">确定</el-button>
+        <el-button type="primary" :loading="addLoading" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
   </div>
@@ -88,7 +95,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { addForbiddenWord, deleteForbiddenWord, getForbiddenWords, toggleForbiddenWord } from '@/api/forbidden-word'
+import { addForbiddenWord, deleteForbiddenWord, getForbiddenWords, toggleForbiddenWord, updateForbiddenWord } from '@/api/forbidden-word'
 import { useUserStore } from '@/store/user'
 
 interface WordRow {
@@ -103,13 +110,14 @@ interface WordRow {
 }
 
 const user = useUserStore()
-const isAdmin = computed(() => user.userInfo.role === 'ADMIN')
+const isAdmin = computed(() => String(user.userInfo.role || '').toUpperCase() === 'ADMIN')
 
 const words = ref<WordRow[]>([])
 const loading = ref(false)
 const addVisible = ref(false)
 const addLoading = ref(false)
-const addForm = reactive({ word: '', category: '极限词', level: 2, remark: '' })
+const editingId = ref<number | null>(null)
+const addForm = reactive({ word: '', category: '极限词', level: 2, enabled: '1', remark: '' })
 
 function levelText(level: number) {
   if (level === 3) return '违规词'
@@ -139,27 +147,59 @@ async function load() {
 }
 
 function openAdd() {
-  addVisible.value = true
-}
-function resetAdd() {
+  editingId.value = null
   addForm.word = ''
   addForm.category = '极限词'
   addForm.level = 2
+  addForm.enabled = '1'
+  addForm.remark = ''
+  addVisible.value = true
+}
+
+function openEdit(row: WordRow) {
+  editingId.value = row.id
+  addForm.word = row.word
+  addForm.category = row.category || ''
+  addForm.level = row.level || 2
+  addForm.enabled = row.enabled === '1' ? '1' : '0'
+  addForm.remark = row.remark || ''
+  addVisible.value = true
+}
+
+function resetAdd() {
+  editingId.value = null
+  addForm.word = ''
+  addForm.category = '极限词'
+  addForm.level = 2
+  addForm.enabled = '1'
   addForm.remark = ''
 }
 
-async function handleAdd() {
+async function handleSubmit() {
   const word = addForm.word.trim()
   if (!word) return ElMessage.warning('请输入违禁词')
   addLoading.value = true
   try {
-    await addForbiddenWord({
-      word,
-      category: addForm.category || undefined,
-      level: addForm.level,
-      remark: addForm.remark || undefined,
-    })
-    ElMessage.success('已添加')
+    if (editingId.value) {
+      await updateForbiddenWord({
+        id: editingId.value,
+        word,
+        category: addForm.category || undefined,
+        level: addForm.level,
+        enabled: addForm.enabled,
+        remark: addForm.remark || undefined,
+      })
+      ElMessage.success('已保存')
+    } else {
+      await addForbiddenWord({
+        word,
+        category: addForm.category || undefined,
+        level: addForm.level,
+        remark: addForm.remark || undefined,
+        enabled: addForm.enabled,
+      })
+      ElMessage.success('已添加')
+    }
     addVisible.value = false
     load()
   } catch {
