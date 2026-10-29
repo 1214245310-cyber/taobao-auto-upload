@@ -35,7 +35,7 @@
         class="word-table"
         empty-text="没有匹配的违禁词"
       >
-        <el-table-column label="违禁词" min-width="320">
+        <el-table-column label="违禁词" min-width="280">
           <template #default="{ row }">
             <div class="word-cell">
               <el-switch
@@ -50,7 +50,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="标签" width="118">
+        <el-table-column label="标签" width="108">
           <template #default="{ row }">
             <el-select
               v-model="row.category"
@@ -67,7 +67,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="匹配方式" width="108">
+        <el-table-column label="匹配方式" width="100">
           <template #default="{ row }">
             <el-select
               v-model="row.matchType"
@@ -81,7 +81,21 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="级别" width="122">
+        <el-table-column label="词库" width="104">
+          <template #default="{ row }">
+            <el-select
+              v-model="row.targetLibrary"
+              size="small"
+              class="cell-select lib"
+              @change="(v: string) => patch(row, 'targetLibrary', v)"
+            >
+              <el-option label="标题库" value="标题库" />
+              <el-option label="品牌库" value="品牌库" />
+            </el-select>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="级别" width="112">
           <template #default="{ row }">
             <el-select
               v-model="row.level"
@@ -97,7 +111,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="返回备注" min-width="190">
+        <el-table-column label="原因备注" min-width="190">
           <template #default="{ row }">
             <el-input
               v-model="row.remark"
@@ -110,19 +124,19 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="添加人" width="112">
+        <el-table-column label="添加人" width="96">
           <template #default="{ row }">
             <span :class="['adder', { sys: row.createdBy === 'system' }]">{{ row.createdBy || '—' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column label="添加时间" width="168">
+        <el-table-column label="添加时间" width="158">
           <template #default="{ row }">
             <span class="time">{{ formatTime(row.createdAt) }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="112" fixed="right">
+        <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="remove(row)">删除</el-button>
@@ -145,54 +159,57 @@
     <el-dialog
       v-model="dialogVisible"
       :title="editingId ? '编辑违禁词' : '添加违禁词'"
-      width="460px"
+      width="660px"
+      class="word-dialog"
+      align-center
       @closed="resetForm"
     >
-      <el-form :model="form" label-width="84px">
+      <el-form :model="form" label-width="96px" label-position="right" class="word-form">
+        <template v-if="!editingId">
+          <el-form-item label="加到哪个库">
+            <el-radio-group v-model="form.targetLibrary" class="radio-line">
+              <el-radio value="标题库">标题库（比商品标题）</el-radio>
+              <el-radio value="品牌库">品牌库（比品牌属性）</el-radio>
+            </el-radio-group>
+          </el-form-item>
+
+          <el-form-item label="匹配方式">
+            <div class="col">
+              <el-radio-group v-model="form.matchType" class="radio-line">
+                <el-radio value="等于">等于</el-radio>
+                <el-radio value="包含">包含</el-radio>
+              </el-radio-group>
+              <p class="hint">{{ matchHint }}</p>
+            </div>
+          </el-form-item>
+        </template>
+
         <el-form-item label="违禁词" required>
           <el-input
             v-model="form.word"
-            type="textarea"
-            :rows="2"
-            placeholder="如：最便宜、绝对、包治百病"
+            placeholder="不区分大小写和空格"
             maxlength="64"
+            @keyup.enter="handleSubmit"
           />
         </el-form-item>
-        <template v-if="!editingId">
-          <el-form-item label="标签">
-            <el-select
-              v-model="form.category"
-              style="width: 100%"
-              filterable
-              allow-create
-              default-first-option
-              placeholder="选择或直接输入"
-            >
-              <el-option v-for="c in categoryOptions" :key="c" :label="c" :value="c" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="匹配方式">
-            <el-select v-model="form.matchType" style="width: 100%">
-              <el-option label="等于（整词完全一致）" value="等于" />
-              <el-option label="包含（标题含该词即命中）" value="包含" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="级别">
-            <el-select v-model="form.level" style="width: 100%">
-              <el-option label="违规词（最严重）" :value="3" />
-              <el-option label="敏感词" :value="2" />
-              <el-option label="平台禁用词" :value="1" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="返回备注">
-            <el-input v-model="form.remark" placeholder="命中时返回的提示，如：不线下" maxlength="255" />
-          </el-form-item>
-        </template>
-        <p v-else class="tip">标签、匹配方式、级别、返回备注请在表格里直接选择修改。</p>
+
+        <el-form-item v-if="!editingId" label="原因备注" required>
+          <el-input
+            v-model="form.remark"
+            type="textarea"
+            :rows="2"
+            resize="none"
+            maxlength="255"
+            placeholder="请填写禁用原因，比如「客户投诉过」——将来别人想删时能看到为什么禁"
+          />
+        </el-form-item>
+        <p v-else class="tip">词库、匹配方式、标签、级别、原因备注请在表格里直接选择修改。</p>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
+        <el-button class="cancel-btn" @click="dialogVisible = false">取消</el-button>
+        <el-button type="primary" class="submit-btn" :loading="submitting" @click="handleSubmit">
+          {{ editingId ? '保存' : '添加' }}
+        </el-button>
       </template>
     </el-dialog>
 
@@ -212,6 +229,10 @@
         <el-select v-model="importForm.matchType" style="width: 130px">
           <el-option label="匹配：等于" value="等于" />
           <el-option label="匹配：包含" value="包含" />
+        </el-select>
+        <el-select v-model="importForm.targetLibrary" style="width: 130px">
+          <el-option label="词库：标题库" value="标题库" />
+          <el-option label="词库：品牌库" value="品牌库" />
         </el-select>
       </div>
       <template #footer>
@@ -240,6 +261,7 @@ interface WordRow {
   level: number
   enabled: string
   matchType: string
+  targetLibrary: string
   remark: string
   createdBy: string
   createdAt: string
@@ -261,12 +283,19 @@ const form = reactive({
   category: '极限词',
   level: 2,
   matchType: '等于',
+  targetLibrary: '标题库',
   remark: '',
 })
 
+const matchHint = computed(() =>
+  form.matchType === '等于'
+    ? '整个标题（或整个品牌值）一模一样才拦，范围窄得多'
+    : '标题里只要出现这个词就算命中，范围宽得多',
+)
+
 const importVisible = ref(false)
 const importing = ref(false)
-const importForm = reactive({ text: '', category: '极限词', matchType: '等于' })
+const importForm = reactive({ text: '', category: '极限词', matchType: '等于', targetLibrary: '标题库' })
 
 const categoryOptions = computed(() => {
   const set = new Set(['极限词', '资质词', '功效词', '品牌词'])
@@ -324,7 +353,11 @@ async function load() {
 }
 
 /** 表格内直接改单个字段：失败则重载回滚 */
-async function patch(row: WordRow, field: 'category' | 'level' | 'enabled' | 'remark' | 'matchType', value: any) {
+async function patch(
+  row: WordRow,
+  field: 'category' | 'level' | 'enabled' | 'remark' | 'matchType' | 'targetLibrary',
+  value: any,
+) {
   try {
     const res = await updateForbiddenWord({ id: row.id, [field]: value })
     if (res.data && typeof res.data === 'object') Object.assign(row, res.data)
@@ -363,6 +396,7 @@ function openAdd() {
   form.category = '极限词'
   form.level = 2
   form.matchType = '等于'
+  form.targetLibrary = '标题库'
   form.remark = ''
   dialogVisible.value = true
 }
@@ -381,6 +415,9 @@ function resetForm() {
 async function handleSubmit() {
   const word = form.word.trim()
   if (!word) return ElMessage.warning('请输入违禁词')
+  if (!editingId.value && !form.remark.trim()) {
+    return ElMessage.warning('请填写原因备注，将来别人想删时才知道为什么禁')
+  }
   submitting.value = true
   try {
     if (editingId.value) {
@@ -392,7 +429,8 @@ async function handleSubmit() {
         category: form.category || undefined,
         level: form.level,
         matchType: form.matchType,
-        remark: form.remark || undefined,
+        targetLibrary: form.targetLibrary,
+        remark: form.remark.trim() || undefined,
       })
       ElMessage.success('已添加')
     }
@@ -409,6 +447,7 @@ function openImport() {
   importForm.text = ''
   importForm.category = '极限词'
   importForm.matchType = '等于'
+  importForm.targetLibrary = '标题库'
   importVisible.value = true
 }
 
@@ -425,6 +464,7 @@ async function handleImport() {
       lines,
       category: importForm.category,
       matchType: importForm.matchType,
+      targetLibrary: importForm.targetLibrary,
     })
     const d = res.data || {}
     ElMessage.success(`导入完成：新增 ${d.added || 0} 条，跳过 ${d.skippedCount || 0} 条`)
@@ -620,6 +660,68 @@ onMounted(load)
   padding: 14px 16px 2px;
 }
 
+/* 弹窗表单 */
+.word-form :deep(.el-form-item) {
+  margin-bottom: 22px;
+}
+.word-form :deep(.el-form-item:last-child) {
+  margin-bottom: 10px;
+}
+.word-form :deep(.el-form-item__label) {
+  font-size: 14px;
+  color: #1f2329;
+  padding-right: 16px;
+}
+.word-form :deep(.el-form-item.is-required > .el-form-item__label::before) {
+  color: #f56c6c;
+  margin-right: 4px;
+}
+.word-form :deep(.el-input__wrapper),
+.word-form :deep(.el-textarea__inner) {
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+  border-radius: 4px;
+}
+.word-form :deep(.el-input__wrapper.is-focus),
+.word-form :deep(.el-textarea__inner:focus) {
+  box-shadow: 0 0 0 1px #2f6bff inset;
+}
+.word-form :deep(.el-input__inner),
+.word-form :deep(.el-textarea__inner) {
+  font-size: 14px;
+}
+.word-form .col {
+  width: 100%;
+}
+
+.radio-line :deep(.el-radio) {
+  height: 24px;
+  margin-right: 40px;
+}
+.radio-line :deep(.el-radio__label) {
+  font-size: 14px;
+  color: #1f2329;
+  padding-left: 8px;
+}
+.radio-line :deep(.el-radio.is-checked .el-radio__label) {
+  color: #2f6bff;
+  font-weight: 500;
+}
+.hint {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #9aa0a6;
+}
+.word-dialog .cancel-btn,
+.word-dialog .submit-btn {
+  min-width: 76px;
+  height: 34px;
+}
+.word-dialog .submit-btn {
+  background: #2f6bff;
+  border-color: #2f6bff;
+}
+
 .tip {
   margin: 0;
   font-size: 12px;
@@ -644,5 +746,36 @@ onMounted(load)
   .toolbar .right {
     justify-content: flex-end;
   }
+}
+</style>
+
+<style>
+/* 弹窗外壳（dialog 被 teleport 到 body，用全局样式保证生效） */
+.word-dialog .el-dialog__header {
+  padding: 20px 24px 4px;
+}
+.word-dialog .el-dialog__title {
+  font-size: 17px;
+  font-weight: 500;
+  color: #1f2329;
+}
+.word-dialog .el-dialog__headerbtn {
+  top: 16px;
+  right: 16px;
+}
+.word-dialog .el-dialog__body {
+  padding: 14px 24px 2px;
+}
+.word-dialog .el-dialog__footer {
+  padding: 4px 24px 20px;
+}
+.word-dialog .cancel-btn,
+.word-dialog .submit-btn {
+  min-width: 76px;
+  height: 34px;
+}
+.word-dialog .submit-btn {
+  background: #2f6bff;
+  border-color: #2f6bff;
 }
 </style>

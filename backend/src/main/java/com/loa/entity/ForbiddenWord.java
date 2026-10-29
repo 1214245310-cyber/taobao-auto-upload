@@ -28,6 +28,10 @@ public class ForbiddenWord {
     @Column(length = 8)
     private String matchType;
 
+    /** 加到哪个库：标题库（比商品标题）/ 品牌库（比品牌属性）。默认标题库 */
+    @Column(length = 16)
+    private String targetLibrary;
+
     @Column(length = 255)
     private String remark;
 
@@ -54,6 +58,7 @@ public class ForbiddenWord {
         updatedAt = now;
         if (enabled == null) enabled = "1";
         if (matchType == null || matchType.isBlank()) matchType = "等于";
+        if (targetLibrary == null || targetLibrary.isBlank()) targetLibrary = "标题库";
     }
 
     @PreUpdate
@@ -73,6 +78,8 @@ public class ForbiddenWord {
     public void setEnabled(String enabled) { this.enabled = enabled; }
     public String getMatchType() { return matchType; }
     public void setMatchType(String matchType) { this.matchType = matchType; }
+    public String getTargetLibrary() { return targetLibrary; }
+    public void setTargetLibrary(String targetLibrary) { this.targetLibrary = targetLibrary; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
     public String getCreatedBy() { return createdBy; }

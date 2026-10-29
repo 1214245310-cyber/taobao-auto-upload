@@ -50,10 +50,12 @@ public class ForbiddenWordController {
         Object category = body.get("category");
         Object matchType = body.get("matchType");
         Object remark = body.get("remark");
+        Object targetLibrary = body.get("targetLibrary");
         return R.ok(service.batchAdd(authorization, lines,
                 category == null ? null : String.valueOf(category),
                 matchType == null ? null : String.valueOf(matchType),
-                remark == null ? null : String.valueOf(remark)));
+                remark == null ? null : String.valueOf(remark),
+                targetLibrary == null ? null : String.valueOf(targetLibrary)));
     }
 
     @PostMapping("/update")    public R<Map<String, Object>> update(

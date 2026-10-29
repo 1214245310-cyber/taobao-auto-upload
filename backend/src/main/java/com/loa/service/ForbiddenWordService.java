@@ -51,6 +51,7 @@ public class ForbiddenWordService {
         if (req.getMatchType() != null && !req.getMatchType().isBlank()) {
             entity.setMatchType(normalizeMatchType(req.getMatchType()));
         }
+        entity.setTargetLibrary(normalizeLibrary(req.getTargetLibrary()));
         if (req.getEnabled() != null && !req.getEnabled().isBlank()) {
             entity.setEnabled("0".equals(req.getEnabled()) ? "0" : "1");
         }
@@ -64,7 +65,7 @@ public class ForbiddenWordService {
      */
     @Transactional
     public Map<String, Object> batchAdd(String authorization, List<String> lines, String category,
-                                        String matchType, String remark) {
+                                        String matchType, String remark, String targetLibrary) {
         User operator = authService.currentUser(authorization);
         int added = 0;
         List<String> skipped = new ArrayList<>();
@@ -91,6 +92,7 @@ public class ForbiddenWordService {
                 entity.setRemark(remark);
             }
             entity.setMatchType(normalizeMatchType(matchType));
+            entity.setTargetLibrary(normalizeLibrary(targetLibrary));
             entity.setCreatedBy(operator.getUsername());
             repository.save(entity);
             added++;
@@ -104,6 +106,11 @@ public class ForbiddenWordService {
 
     private String normalizeMatchType(String matchType) {
         return "包含".equals(matchType) ? "包含" : "等于";
+    }
+
+    /** 词库只认「标题库」和「品牌库」，其它一律落到标题库 */
+    private String normalizeLibrary(String library) {
+        return "品牌库".equals(library) ? "品牌库" : "标题库";
     }
 
     /** 部分更新：未传的字段保持不变，便于表格内下拉直接改单个字段 */
@@ -126,6 +133,9 @@ public class ForbiddenWordService {
         if (req.getRemark() != null) w.setRemark(req.getRemark());
         if (req.getMatchType() != null && !req.getMatchType().isBlank()) {
             w.setMatchType(normalizeMatchType(req.getMatchType()));
+        }
+        if (req.getTargetLibrary() != null && !req.getTargetLibrary().isBlank()) {
+            w.setTargetLibrary(normalizeLibrary(req.getTargetLibrary()));
         }
         if (req.getEnabled() != null && !req.getEnabled().isBlank()) {
             w.setEnabled("0".equals(req.getEnabled()) ? "0" : "1");
@@ -159,6 +169,8 @@ public class ForbiddenWordService {
         m.put("level", w.getLevel() == null ? 2 : w.getLevel());
         m.put("enabled", w.getEnabled() == null ? "1" : w.getEnabled());
         m.put("matchType", w.getMatchType() == null || w.getMatchType().isBlank() ? "等于" : w.getMatchType());
+        m.put("targetLibrary",
+                w.getTargetLibrary() == null || w.getTargetLibrary().isBlank() ? "标题库" : w.getTargetLibrary());
         m.put("remark", w.getRemark() == null ? "" : w.getRemark());
         m.put("createdBy", w.getCreatedBy() == null ? "system" : w.getCreatedBy());
         m.put("createdAt", w.getCreatedAt() == null ? "" : w.getCreatedAt().toString());

@@ -12,6 +12,7 @@ export function addForbiddenWord(data: {
   remark?: string
   enabled?: string
   matchType?: string
+  targetLibrary?: string
 }) {
   return request.post('/system/forbidden-word/add', data)
 }
@@ -22,6 +23,7 @@ export function batchAddForbiddenWord(data: {
   lines?: string[]
   category?: string
   matchType?: string
+  targetLibrary?: string
   remark?: string
 }) {
   return request.post('/system/forbidden-word/batch-add', data)
@@ -35,6 +37,7 @@ export function updateForbiddenWord(data: {
   remark?: string
   enabled?: string
   matchType?: string
+  targetLibrary?: string
 }) {
   return request.post('/system/forbidden-word/update', data)
 }

@@ -31,6 +31,13 @@ public class AddForbiddenWordRequest {
     @Size(max = 8)
     private String matchType;
 
+    /** 加到哪个库：标题库 / 品牌库；为空默认「标题库」 */
+    @Size(max = 16, message = "词库名称过长")
+    private String targetLibrary;
+
+    public String getTargetLibrary() { return targetLibrary; }
+    public void setTargetLibrary(String targetLibrary) { this.targetLibrary = targetLibrary; }
+
     public String getMatchType() { return matchType; }
     public void setMatchType(String matchType) { this.matchType = matchType; }
 
