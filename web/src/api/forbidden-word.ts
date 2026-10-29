@@ -11,8 +11,20 @@ export function addForbiddenWord(data: {
   level?: number
   remark?: string
   enabled?: string
+  matchType?: string
 }) {
   return request.post('/system/forbidden-word/add', data)
+}
+
+/** 批量导入：一行一个词，支持「词,标签,备注」 */
+export function batchAddForbiddenWord(data: {
+  text?: string
+  lines?: string[]
+  category?: string
+  matchType?: string
+  remark?: string
+}) {
+  return request.post('/system/forbidden-word/batch-add', data)
 }
 
 export function updateForbiddenWord(data: {
@@ -22,6 +34,7 @@ export function updateForbiddenWord(data: {
   level?: number
   remark?: string
   enabled?: string
+  matchType?: string
 }) {
   return request.post('/system/forbidden-word/update', data)
 }

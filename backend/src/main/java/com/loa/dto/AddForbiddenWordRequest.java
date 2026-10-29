@@ -27,6 +27,13 @@ public class AddForbiddenWordRequest {
     @Size(max = 8)
     private String enabled;
 
+    /** 匹配方式：等于 / 包含；为空默认「等于」 */
+    @Size(max = 8)
+    private String matchType;
+
+    public String getMatchType() { return matchType; }
+    public void setMatchType(String matchType) { this.matchType = matchType; }
+
     public String getEnabled() { return enabled; }
     public void setEnabled(String enabled) { this.enabled = enabled; }
 

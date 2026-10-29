@@ -29,6 +29,13 @@ public class UpdateForbiddenWordRequest {
     @Size(max = 8)
     private String enabled;
 
+    /** 匹配方式：等于 / 包含；为空则不改动 */
+    @Size(max = 8)
+    private String matchType;
+
+    public String getMatchType() { return matchType; }
+    public void setMatchType(String matchType) { this.matchType = matchType; }
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getWord() { return word; }

@@ -1,58 +1,56 @@
 <template>
   <div class="forbidden-page">
-    <div class="page-head">
-      <div>
-        <h2>违禁词管理</h2>
-        <p class="sub">解析商品时自动校验标题，命中即提示。分类、等级、状态、备注可在表格里直接改。</p>
-      </div>
-      <el-button type="primary" :icon="Plus" @click="openAdd">新增违禁词</el-button>
-    </div>
+    <el-breadcrumb separator="/" class="crumb">
+      <el-breadcrumb-item>店铺商品管理</el-breadcrumb-item>
+      <el-breadcrumb-item>违禁词库</el-breadcrumb-item>
+    </el-breadcrumb>
 
-    <!-- 概览 -->
-    <div class="stat-row">
-      <div class="stat">
-        <span class="stat-num">{{ stats.total }}</span>
-        <span class="stat-label">总词数</span>
-      </div>
-      <div class="stat on">
-        <span class="stat-num">{{ stats.on }}</span>
-        <span class="stat-label">已启用</span>
-      </div>
-      <div class="stat off">
-        <span class="stat-num">{{ stats.off }}</span>
-        <span class="stat-label">已停用</span>
-      </div>
-      <div class="stat">
-        <span class="stat-num">{{ stats.level3 }}</span>
-        <span class="stat-label">违规词</span>
-      </div>
-    </div>
-
-    <el-card shadow="never" class="table-card">
-      <div class="toolbar">
+    <div class="toolbar">
+      <div class="left">
+        <el-select v-model="categoryFilter" class="cat" @change="applySearch">
+          <el-option label="全部分类" value="all" />
+          <el-option v-for="c in categoryOptions" :key="c" :label="c" :value="c" />
+        </el-select>
         <el-input
-          v-model="keyword"
-          placeholder="搜索违禁词 / 分类 / 添加人"
-          :prefix-icon="Search"
+          v-model="keywordInput"
+          class="kw"
+          placeholder="搜索关键词"
           clearable
-          class="search"
+          @keyup.enter="applySearch"
+          @clear="applySearch"
         />
-        <el-radio-group v-model="statusFilter" size="default">
-          <el-radio-button value="all">全部</el-radio-button>
-          <el-radio-button value="1">启用</el-radio-button>
-          <el-radio-button value="0">停用</el-radio-button>
-        </el-radio-group>
-        <span class="count">共 {{ filtered.length }} 条</span>
+        <el-button type="primary" class="search-btn" @click="applySearch">搜索</el-button>
       </div>
+      <div class="right">
+        <el-button class="ghost-btn" @click="copyAll">一键复制全部违禁词</el-button>
+        <el-button class="ghost-btn" @click="openImport">导入</el-button>
+        <el-button type="primary" @click="openAdd">添加违禁词</el-button>
+      </div>
+    </div>
 
-      <el-table :data="filtered" v-loading="loading" stripe empty-text="还没有违禁词，点右上角新增">
-        <el-table-column label="违禁词" min-width="150">
+    <div class="table-wrap">
+      <el-table
+        :data="pageRows"
+        v-loading="loading"
+        class="word-table"
+        empty-text="没有匹配的违禁词"
+      >
+        <el-table-column label="违禁词" min-width="320">
           <template #default="{ row }">
-            <span class="word">{{ row.word }}</span>
+            <div class="word-cell">
+              <el-switch
+                v-model="row.enabled"
+                active-value="1"
+                inactive-value="0"
+                size="small"
+                @change="(v: string) => patch(row, 'enabled', v)"
+              />
+              <span class="word" :class="{ off: row.enabled !== '1' }">{{ row.word }}</span>
+            </div>
           </template>
         </el-table-column>
 
-        <el-table-column label="分类" width="140">
+        <el-table-column label="标签" width="118">
           <template #default="{ row }">
             <el-select
               v-model="row.category"
@@ -61,7 +59,7 @@
               allow-create
               default-first-option
               placeholder="未分类"
-              class="cell-select"
+              class="cell-select tag"
               @change="(v: string) => patch(row, 'category', v)"
             >
               <el-option v-for="c in categoryOptions" :key="c" :label="c" :value="c" />
@@ -69,7 +67,21 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="等级" width="140">
+        <el-table-column label="匹配方式" width="108">
+          <template #default="{ row }">
+            <el-select
+              v-model="row.matchType"
+              size="small"
+              class="cell-select plain"
+              @change="(v: string) => patch(row, 'matchType', v)"
+            >
+              <el-option label="等于" value="等于" />
+              <el-option label="包含" value="包含" />
+            </el-select>
+          </template>
+        </el-table-column>
+
+        <el-table-column label="级别" width="122">
           <template #default="{ row }">
             <el-select
               v-model="row.level"
@@ -85,22 +97,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="状态" width="112">
-          <template #default="{ row }">
-            <el-select
-              v-model="row.enabled"
-              size="small"
-              class="cell-select"
-              :class="row.enabled === '1' ? 'st-on' : 'st-off'"
-              @change="(v: string) => patch(row, 'enabled', v)"
-            >
-              <el-option label="启用" value="1" />
-              <el-option label="停用" value="0" />
-            </el-select>
-          </template>
-        </el-table-column>
-
-        <el-table-column label="备注" min-width="170">
+        <el-table-column label="返回备注" min-width="190">
           <template #default="{ row }">
             <el-input
               v-model="row.remark"
@@ -113,43 +110,56 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="添加人" width="110">
+        <el-table-column label="添加人" width="112">
           <template #default="{ row }">
-            <span :class="{ sys: row.createdBy === 'system' }">{{ row.createdBy || '—' }}</span>
+            <span :class="['adder', { sys: row.createdBy === 'system' }]">{{ row.createdBy || '—' }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column label="添加时间" width="165">
-          <template #default="{ row }">{{ formatTime(row.createdAt) }}</template>
+        <el-table-column label="添加时间" width="168">
+          <template #default="{ row }">
+            <span class="time">{{ formatTime(row.createdAt) }}</span>
+          </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="130" fixed="right">
+        <el-table-column label="操作" width="112" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
-    </el-card>
 
-    <!-- 新增 / 改词 -->
+      <div class="pager">
+        <el-pagination
+          v-model:current-page="page"
+          :page-size="pageSize"
+          :total="filtered.length"
+          layout="total, prev, pager, next, jumper"
+          background
+        />
+      </div>
+    </div>
+
+    <!-- 添加 / 编辑 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑违禁词' : '新增违禁词'"
-      width="440px"
+      :title="editingId ? '编辑违禁词' : '添加违禁词'"
+      width="460px"
       @closed="resetForm"
     >
-      <el-form :model="form" label-width="80px">
+      <el-form :model="form" label-width="84px">
         <el-form-item label="违禁词" required>
           <el-input
             v-model="form.word"
+            type="textarea"
+            :rows="2"
             placeholder="如：最便宜、绝对、包治百病"
             maxlength="64"
-            @keyup.enter="handleSubmit"
           />
         </el-form-item>
         <template v-if="!editingId">
-          <el-form-item label="分类">
+          <el-form-item label="标签">
             <el-select
               v-model="form.category"
               style="width: 100%"
@@ -161,39 +171,63 @@
               <el-option v-for="c in categoryOptions" :key="c" :label="c" :value="c" />
             </el-select>
           </el-form-item>
-          <el-form-item label="等级">
+          <el-form-item label="匹配方式">
+            <el-select v-model="form.matchType" style="width: 100%">
+              <el-option label="等于（整词完全一致）" value="等于" />
+              <el-option label="包含（标题含该词即命中）" value="包含" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="级别">
             <el-select v-model="form.level" style="width: 100%">
               <el-option label="违规词（最严重）" :value="3" />
               <el-option label="敏感词" :value="2" />
               <el-option label="平台禁用词" :value="1" />
             </el-select>
           </el-form-item>
-          <el-form-item label="状态">
-            <el-select v-model="form.enabled" style="width: 100%">
-              <el-option label="启用" value="1" />
-              <el-option label="停用" value="0" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="备注">
-            <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="选填" maxlength="255" />
+          <el-form-item label="返回备注">
+            <el-input v-model="form.remark" placeholder="命中时返回的提示，如：不线下" maxlength="255" />
           </el-form-item>
         </template>
-        <p v-else class="tip">分类、等级、状态、备注请在表格里直接选择修改。</p>
+        <p v-else class="tip">标签、匹配方式、级别、返回备注请在表格里直接选择修改。</p>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 批量导入 -->
+    <el-dialog v-model="importVisible" title="导入违禁词" width="520px" @closed="resetImport">
+      <p class="import-tip">每行一个违禁词；也可写成「违禁词,标签,备注」，已存在的词会自动跳过。</p>
+      <el-input
+        v-model="importForm.text"
+        type="textarea"
+        :rows="8"
+        placeholder="最便宜&#10;绝对,极限词,不线下&#10;包治百病,功效词,售后无保障"
+      />
+      <div class="import-opts">
+        <el-select v-model="importForm.category" placeholder="默认标签" style="width: 150px">
+          <el-option v-for="c in categoryOptions" :key="c" :label="c" :value="c" />
+        </el-select>
+        <el-select v-model="importForm.matchType" style="width: 130px">
+          <el-option label="匹配：等于" value="等于" />
+          <el-option label="匹配：包含" value="包含" />
+        </el-select>
+      </div>
+      <template #footer>
+        <el-button @click="importVisible = false">取消</el-button>
+        <el-button type="primary" :loading="importing" @click="handleImport">开始导入</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { Plus, Search } from '@element-plus/icons-vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   addForbiddenWord,
+  batchAddForbiddenWord,
   deleteForbiddenWord,
   getForbiddenWords,
   updateForbiddenWord,
@@ -205,6 +239,7 @@ interface WordRow {
   category: string
   level: number
   enabled: string
+  matchType: string
   remark: string
   createdBy: string
   createdAt: string
@@ -212,12 +247,26 @@ interface WordRow {
 
 const words = ref<WordRow[]>([])
 const loading = ref(false)
+const categoryFilter = ref('all')
+const keywordInput = ref('')
 const keyword = ref('')
-const statusFilter = ref('all')
+const page = ref(1)
+const pageSize = 20
+
 const dialogVisible = ref(false)
 const submitting = ref(false)
 const editingId = ref<number | null>(null)
-const form = reactive({ word: '', category: '极限词', level: 2, enabled: '1', remark: '' })
+const form = reactive({
+  word: '',
+  category: '极限词',
+  level: 2,
+  matchType: '等于',
+  remark: '',
+})
+
+const importVisible = ref(false)
+const importing = ref(false)
+const importForm = reactive({ text: '', category: '极限词', matchType: '等于' })
 
 const categoryOptions = computed(() => {
   const set = new Set(['极限词', '资质词', '功效词', '品牌词'])
@@ -228,26 +277,38 @@ const categoryOptions = computed(() => {
 const filtered = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
   return words.value.filter((w) => {
+    const hitCat = categoryFilter.value === 'all' || w.category === categoryFilter.value
     const hitKw =
       !kw ||
       w.word.toLowerCase().includes(kw) ||
-      (w.category || '').toLowerCase().includes(kw) ||
+      (w.remark || '').toLowerCase().includes(kw) ||
       (w.createdBy || '').toLowerCase().includes(kw)
-    const hitSt = statusFilter.value === 'all' || w.enabled === statusFilter.value
-    return hitKw && hitSt
+    return hitCat && hitKw
   })
 })
 
-const stats = computed(() => ({
-  total: words.value.length,
-  on: words.value.filter((w) => w.enabled === '1').length,
-  off: words.value.filter((w) => w.enabled !== '1').length,
-  level3: words.value.filter((w) => w.level === 3).length,
-}))
+const pageRows = computed(() => {
+  const start = (page.value - 1) * pageSize
+  return filtered.value.slice(start, start + pageSize)
+})
+
+// 筛选结果变少时回到第一页，避免停在空白页
+watch(
+  () => filtered.value.length,
+  (len) => {
+    const maxPage = Math.max(1, Math.ceil(len / pageSize))
+    if (page.value > maxPage) page.value = maxPage
+  },
+)
 
 function formatTime(v: string) {
   if (!v) return '—'
   return v.replace('T', ' ').slice(0, 19)
+}
+
+function applySearch() {
+  keyword.value = keywordInput.value
+  page.value = 1
 }
 
 async function load() {
@@ -262,8 +323,8 @@ async function load() {
   }
 }
 
-/** 表格内直接改单个字段：乐观更新，失败回滚 */
-async function patch(row: WordRow, field: 'category' | 'level' | 'enabled' | 'remark', value: any) {
+/** 表格内直接改单个字段：失败则重载回滚 */
+async function patch(row: WordRow, field: 'category' | 'level' | 'enabled' | 'remark' | 'matchType', value: any) {
   try {
     const res = await updateForbiddenWord({ id: row.id, [field]: value })
     if (res.data && typeof res.data === 'object') Object.assign(row, res.data)
@@ -273,12 +334,35 @@ async function patch(row: WordRow, field: 'category' | 'level' | 'enabled' | 're
   }
 }
 
+async function copyAll() {
+  const list = filtered.value.map((w) => w.word)
+  if (!list.length) return ElMessage.warning('没有可复制的违禁词')
+  const text = list.join('\n')
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    ElMessage.success(`已复制 ${list.length} 个违禁词`)
+  } catch {
+    ElMessage.error('复制失败，请手动选择')
+  }
+}
+
 function openAdd() {
   editingId.value = null
   form.word = ''
   form.category = '极限词'
   form.level = 2
-  form.enabled = '1'
+  form.matchType = '等于'
   form.remark = ''
   dialogVisible.value = true
 }
@@ -307,8 +391,8 @@ async function handleSubmit() {
         word,
         category: form.category || undefined,
         level: form.level,
+        matchType: form.matchType,
         remark: form.remark || undefined,
-        enabled: form.enabled,
       })
       ElMessage.success('已添加')
     }
@@ -318,6 +402,38 @@ async function handleSubmit() {
     // 拦截器已提示
   } finally {
     submitting.value = false
+  }
+}
+
+function openImport() {
+  importForm.text = ''
+  importForm.category = '极限词'
+  importForm.matchType = '等于'
+  importVisible.value = true
+}
+
+function resetImport() {
+  importForm.text = ''
+}
+
+async function handleImport() {
+  const lines = importForm.text.split(/\r?\n/).filter((l) => l.trim())
+  if (!lines.length) return ElMessage.warning('请先粘贴要导入的违禁词')
+  importing.value = true
+  try {
+    const res = await batchAddForbiddenWord({
+      lines,
+      category: importForm.category,
+      matchType: importForm.matchType,
+    })
+    const d = res.data || {}
+    ElMessage.success(`导入完成：新增 ${d.added || 0} 条，跳过 ${d.skippedCount || 0} 条`)
+    importVisible.value = false
+    load()
+  } catch {
+    // 拦截器已提示
+  } finally {
+    importing.value = false
   }
 }
 
@@ -344,86 +460,114 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 16px;
+.forbidden-page {
+  padding: 2px 0 8px;
 }
-.page-head h2 {
-  margin: 0 0 4px;
-  font-size: 20px;
-}
-.sub {
-  margin: 0;
-  color: #909399;
+.crumb {
+  margin-bottom: 14px;
   font-size: 13px;
 }
-
-.stat-row {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
+.crumb :deep(.el-breadcrumb__inner) {
+  color: #909399;
+  font-weight: 400;
 }
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 12px 16px;
-  border-radius: 10px;
-  background: #fff;
-  border: 1px solid #ebeef5;
-}
-.stat-num {
-  font-size: 22px;
-  font-weight: 700;
+.crumb :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
   color: #303133;
-  line-height: 1.2;
-}
-.stat-label {
-  font-size: 12px;
-  color: #909399;
-}
-.stat.on .stat-num {
-  color: #67c23a;
-}
-.stat.off .stat-num {
-  color: #909399;
+  font-weight: 500;
 }
 
-.table-card {
-  border-radius: 10px;
-}
 .toolbar {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
   flex-wrap: wrap;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  margin-bottom: 12px;
 }
-.search {
-  width: 260px;
+.toolbar .left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
-.count {
-  margin-left: auto;
+.cat {
+  width: 130px;
+}
+.kw {
+  width: 240px;
+}
+.search-btn {
+  min-width: 76px;
+}
+.toolbar .right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ghost-btn {
+  color: #2f6bff;
+  border-color: #d8e3ff;
+  background: #f2f6ff;
+}
+.ghost-btn:hover {
+  color: #2f6bff;
+  border-color: #2f6bff;
+  background: #e8f0ff;
+}
+
+.table-wrap {
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+  padding: 0 0 12px;
+}
+.word-table {
   font-size: 13px;
-  color: #909399;
+}
+.word-table :deep(th.el-table__cell) {
+  background: #fafbfc;
+  color: #606266;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 9px 0;
+}
+.word-table :deep(td.el-table__cell) {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f2f5;
+}
+.word-table :deep(.el-table__row:hover > td.el-table__cell) {
+  background: #f7f9fc;
 }
 
+.word-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .word {
-  font-weight: 600;
+  color: #303133;
+  line-height: 1.5;
+  word-break: break-all;
 }
-.sys {
-  color: #909399;
-}
-.tip {
-  margin: 0;
-  font-size: 12px;
-  color: #909399;
+.word.off {
+  color: #b1b3b8;
+  text-decoration: line-through;
 }
 
-/* 表格内下拉/输入：弱化成可点的单元格 */
+.time {
+  color: #909399;
+}
+.adder {
+  color: #606266;
+}
+.adder.sys {
+  color: #a8abb2;
+}
+
+/* 单元格内下拉 / 输入：无边框，点一下才生效 */
 .cell-select {
   width: 100%;
 }
@@ -434,17 +578,20 @@ onMounted(load)
   min-height: 28px;
 }
 .cell-select :deep(.el-select__wrapper:hover) {
-  background: #f5f7fa;
+  background: #f2f5fa;
 }
 .cell-select :deep(.el-select__selected-item) {
   font-size: 13px;
 }
-.st-on :deep(.el-select__selected-item) {
-  color: #67c23a;
-  font-weight: 600;
+.cell-select.tag :deep(.el-select__wrapper) {
+  background: #eef3ff;
+  border-radius: 4px;
 }
-.st-off :deep(.el-select__selected-item) {
-  color: #909399;
+.cell-select.tag :deep(.el-select__selected-item) {
+  color: #2f6bff;
+}
+.cell-select.plain :deep(.el-select__selected-item) {
+  color: #606266;
 }
 .lv-3 :deep(.el-select__selected-item) {
   color: #f56c6c;
@@ -464,12 +611,38 @@ onMounted(load)
   padding: 0 8px;
 }
 .cell-input :deep(.el-input__wrapper:hover) {
-  background: #f5f7fa;
+  background: #f2f5fa;
 }
 
-@media (max-width: 900px) {
-  .stat-row {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+.pager {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 16px 2px;
+}
+
+.tip {
+  margin: 0;
+  font-size: 12px;
+  color: #909399;
+}
+.import-tip {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #909399;
+}
+.import-opts {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+@media (max-width: 1100px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .toolbar .right {
+    justify-content: flex-end;
   }
 }
 </style>

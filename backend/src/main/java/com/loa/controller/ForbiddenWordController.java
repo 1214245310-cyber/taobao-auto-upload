@@ -33,8 +33,30 @@ public class ForbiddenWordController {
         return R.ok(service.add(authorization, req));
     }
 
-    @PostMapping("/update")
-    public R<Map<String, Object>> update(
+    /** 批量导入：body 支持 text（按行拆分）或 lines 数组 */
+    @PostMapping("/batch-add")
+    public R<Map<String, Object>> batchAdd(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody Map<String, Object> body) {
+        List<String> lines = new java.util.ArrayList<>();
+        Object text = body.get("text");
+        if (text != null) {
+            for (String line : String.valueOf(text).split("\\r?\\n")) lines.add(line);
+        }
+        Object arr = body.get("lines");
+        if (arr instanceof List<?> list) {
+            for (Object o : list) lines.add(String.valueOf(o));
+        }
+        Object category = body.get("category");
+        Object matchType = body.get("matchType");
+        Object remark = body.get("remark");
+        return R.ok(service.batchAdd(authorization, lines,
+                category == null ? null : String.valueOf(category),
+                matchType == null ? null : String.valueOf(matchType),
+                remark == null ? null : String.valueOf(remark)));
+    }
+
+    @PostMapping("/update")    public R<Map<String, Object>> update(
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @Valid @RequestBody UpdateForbiddenWordRequest req) {
         return R.ok(service.update(authorization, req));

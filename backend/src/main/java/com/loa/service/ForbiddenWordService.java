@@ -48,11 +48,62 @@ public class ForbiddenWordService {
         }
         ForbiddenWord entity = new ForbiddenWord(word, req.getCategory(), req.getLevel());
         entity.setRemark(req.getRemark());
+        if (req.getMatchType() != null && !req.getMatchType().isBlank()) {
+            entity.setMatchType(normalizeMatchType(req.getMatchType()));
+        }
         if (req.getEnabled() != null && !req.getEnabled().isBlank()) {
             entity.setEnabled("0".equals(req.getEnabled()) ? "0" : "1");
         }
         entity.setCreatedBy(operator.getUsername());
         return toMap(repository.save(entity));
+    }
+
+    /**
+     * 批量导入。每行一个词，支持 "违禁词" 或 "违禁词,标签,备注" 两种写法；
+     * 已存在的词直接跳过，不报错，最后返回成功/跳过条数。
+     */
+    @Transactional
+    public Map<String, Object> batchAdd(String authorization, List<String> lines, String category,
+                                        String matchType, String remark) {
+        User operator = authService.currentUser(authorization);
+        int added = 0;
+        List<String> skipped = new ArrayList<>();
+        if (lines == null) lines = List.of();
+        for (String raw : lines) {
+            if (raw == null || raw.isBlank()) continue;
+            String[] parts = raw.split("[,，\\t]");
+            String word = parts[0].trim();
+            if (word.isEmpty()) continue;
+            if (word.length() > 64) {
+                skipped.add(word + "（超长）");
+                continue;
+            }
+            if (repository.findByWord(word).isPresent()) {
+                skipped.add(word);
+                continue;
+            }
+            ForbiddenWord entity = new ForbiddenWord(word,
+                    parts.length > 1 && !parts[1].isBlank() ? parts[1].trim() : category,
+                    2);
+            if (parts.length > 2 && !parts[2].isBlank()) {
+                entity.setRemark(parts[2].trim());
+            } else if (remark != null && !remark.isBlank()) {
+                entity.setRemark(remark);
+            }
+            entity.setMatchType(normalizeMatchType(matchType));
+            entity.setCreatedBy(operator.getUsername());
+            repository.save(entity);
+            added++;
+        }
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("added", added);
+        m.put("skippedCount", skipped.size());
+        m.put("skipped", skipped.size() > 50 ? skipped.subList(0, 50) : skipped);
+        return m;
+    }
+
+    private String normalizeMatchType(String matchType) {
+        return "包含".equals(matchType) ? "包含" : "等于";
     }
 
     /** 部分更新：未传的字段保持不变，便于表格内下拉直接改单个字段 */
@@ -73,6 +124,9 @@ public class ForbiddenWordService {
         if (req.getCategory() != null) w.setCategory(req.getCategory());
         if (req.getLevel() != null) w.setLevel(req.getLevel());
         if (req.getRemark() != null) w.setRemark(req.getRemark());
+        if (req.getMatchType() != null && !req.getMatchType().isBlank()) {
+            w.setMatchType(normalizeMatchType(req.getMatchType()));
+        }
         if (req.getEnabled() != null && !req.getEnabled().isBlank()) {
             w.setEnabled("0".equals(req.getEnabled()) ? "0" : "1");
         }
@@ -104,6 +158,7 @@ public class ForbiddenWordService {
         m.put("category", w.getCategory() == null ? "" : w.getCategory());
         m.put("level", w.getLevel() == null ? 2 : w.getLevel());
         m.put("enabled", w.getEnabled() == null ? "1" : w.getEnabled());
+        m.put("matchType", w.getMatchType() == null || w.getMatchType().isBlank() ? "等于" : w.getMatchType());
         m.put("remark", w.getRemark() == null ? "" : w.getRemark());
         m.put("createdBy", w.getCreatedBy() == null ? "system" : w.getCreatedBy());
         m.put("createdAt", w.getCreatedAt() == null ? "" : w.getCreatedAt().toString());

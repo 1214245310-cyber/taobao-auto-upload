@@ -24,6 +24,10 @@ public class ForbiddenWord {
     @Column(length = 8)
     private String enabled;
 
+    /** 匹配方式：等于 / 包含。默认「等于」 */
+    @Column(length = 8)
+    private String matchType;
+
     @Column(length = 255)
     private String remark;
 
@@ -49,6 +53,7 @@ public class ForbiddenWord {
         if (createdAt == null) createdAt = now;
         updatedAt = now;
         if (enabled == null) enabled = "1";
+        if (matchType == null || matchType.isBlank()) matchType = "等于";
     }
 
     @PreUpdate
@@ -66,6 +71,8 @@ public class ForbiddenWord {
     public void setLevel(Integer level) { this.level = level; }
     public String getEnabled() { return enabled; }
     public void setEnabled(String enabled) { this.enabled = enabled; }
+    public String getMatchType() { return matchType; }
+    public void setMatchType(String matchType) { this.matchType = matchType; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
     public String getCreatedBy() { return createdBy; }
