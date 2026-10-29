@@ -355,9 +355,13 @@ public class AuthService {
                     throw new IllegalArgumentException("邮箱「" + email + "」已被其他账号使用");
                 }
                 if (!email.equals(current)) {
+                    // 换绑邮箱必须收码验证，验证通过才写入并标记为已验证
+                    if (req.getEmailCode() == null || req.getEmailCode().isBlank()) {
+                        throw new IllegalArgumentException("请先给新邮箱获取验证码，验证通过后才能绑定");
+                    }
+                    emailCodeService.verify(email, req.getEmailCode());
                     target.setEmail(email);
-                    // 管理员代填的邮箱先视为未验证；用户可用「忘记密码」发码自证
-                    target.setEmailVerified("0");
+                    target.setEmailVerified("1");
                 }
             }
         }
@@ -429,9 +433,27 @@ public class AuthService {
      * 管理员后台新增用户（无需邮箱验证码）。
      * 邮箱选填；用户名/密码规则与注册一致。
      */
+    /**
+     * 管理员新增用户。
+     * 简化录入：邮箱必填且必须验证通过才算绑定，登录名默认取邮箱前缀（可传 username 覆盖）。
+     */
     public Map<String, Object> addUser(String username, String nickname, String email,
-                                       String password, String role) {
+                                       String password, String role, String emailCode) {
+        String em = email == null ? "" : email.trim().toLowerCase();
+        if (em.isEmpty()) {
+            throw new IllegalArgumentException("请填写邮箱");
+        }
+        if (!em.matches(EMAIL_RE)) {
+            throw new IllegalArgumentException("邮箱格式不正确");
+        }
+        if (userRepository.existsByEmail(em)) {
+            throw new IllegalArgumentException("邮箱「" + em + "」已被使用");
+        }
+
         String uname = username == null ? "" : username.trim();
+        if (uname.isEmpty()) {
+            uname = deriveUsername(em);
+        }
         if (!uname.matches("^[a-zA-Z0-9_]{3,20}$")) {
             throw new IllegalArgumentException("用户名需为 3-20 位字母、数字或下划线");
         }
@@ -441,18 +463,18 @@ public class AuthService {
         if (password == null || password.length() < 6 || password.length() > 32) {
             throw new IllegalArgumentException("密码长度需为 6-32 位");
         }
+        if (emailCode == null || emailCode.isBlank()) {
+            throw new IllegalArgumentException("请先获取邮箱验证码，验证通过后才能绑定邮箱");
+        }
+        // 校验并消费验证码：没通过就不会建账号，避免留下无效数据
+        emailCodeService.verify(em, emailCode);
+
         User u = new User();
         u.setUsername(uname);
         u.setPassword(passwordEncoder.encode(password));
         u.setNickname(nickname == null || nickname.isBlank() ? uname : nickname.trim());
-        if (email != null && !email.isBlank()) {
-            String em = email.trim().toLowerCase();
-            if (userRepository.existsByEmail(em)) {
-                throw new IllegalArgumentException("邮箱「" + em + "」已被使用");
-            }
-            u.setEmail(em);
-            u.setEmailVerified("0");
-        }
+        u.setEmail(em);
+        u.setEmailVerified("1");
         u.setRole("ADMIN".equalsIgnoreCase(role) ? "ADMIN" : "USER");
         u.setStatus("0");
         userRepository.save(u);
@@ -460,6 +482,36 @@ public class AuthService {
         m.put("id", u.getId());
         m.put("username", u.getUsername());
         return m;
+    }
+
+    /** 邮箱是否已被其他账号占用（供后台绑邮箱前预检） */
+    public boolean isEmailTaken(String email) {
+        return email != null && !email.isBlank() && userRepository.existsByEmail(email.trim().toLowerCase());
+    }
+
+    /** 后台向待绑定邮箱发验证码：管理员操作，跳过按 IP 的限流 */
+    public void sendBindCode(String email, String clientIp) {
+        emailCodeService.send(email, clientIp, true);
+    }
+
+    /** 用邮箱前缀生成一个没被占用的登录名，例如 xby@qq.com → xby、xby_2 */    private String deriveUsername(String email) {
+        String prefix = email.substring(0, email.indexOf('@')).replaceAll("[^a-zA-Z0-9_]", "");
+        if (prefix.length() < 3) {
+            prefix = prefix + "user";
+        }
+        if (prefix.length() > 16) {
+            prefix = prefix.substring(0, 16);
+        }
+        String candidate = prefix;
+        int i = 2;
+        while (userRepository.findByUsername(candidate).isPresent()) {
+            candidate = prefix + "_" + i;
+            i++;
+            if (i > 99) {
+                throw new IllegalArgumentException("无法自动生成登录名，请手动填写用户名");
+            }
+        }
+        return candidate;
     }
 
     /**

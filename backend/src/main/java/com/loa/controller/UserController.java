@@ -6,9 +6,12 @@ import com.loa.dto.ChangePwdRequest;
 import com.loa.dto.ResetPwdRequest;
 import com.loa.dto.UpdateUserRequest;
 import com.loa.service.AuthService;
+import com.loa.service.EmailCodeService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +39,42 @@ public class UserController {
             @RequestBody AddUserRequest req) {
         authService.requireAdmin(authorization);
         return R.ok(authService.addUser(req.getUsername(), req.getNickname(),
-                req.getEmail(), req.getPassword(), req.getRole()));
+                req.getEmail(), req.getPassword(), req.getRole(), req.getEmailCode()));
+    }
+
+    /** 给「要绑定的邮箱」发验证码：新增用户或换绑邮箱前必须先验证 */
+    @PostMapping("/email-code")
+    public R<Map<String, Object>> emailCode(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody Map<String, Object> body,
+            HttpServletRequest request) {
+        authService.requireAdmin(authorization);
+        Object raw = body.get("email");
+        String email = raw == null ? "" : String.valueOf(raw).trim().toLowerCase();
+        if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$")) {
+            throw new IllegalArgumentException("邮箱格式不正确");
+        }
+        if (authService.isEmailTaken(email)) {
+            throw new IllegalArgumentException("邮箱「" + email + "」已被其他账号使用");
+        }
+        authService.sendBindCode(email, clientIp(request));
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("email", email);
+        m.put("ttl", EmailCodeService.TTL_MINUTES * 60);
+        m.put("cooldown", EmailCodeService.COOLDOWN_SECONDS);
+        return R.ok(m);
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        String real = request.getHeader("X-Real-IP");
+        if (real != null && !real.isBlank()) {
+            return real.trim();
+        }
+        return request.getRemoteAddr();
     }
 
     /** 编辑用户：昵称 / 邮箱 / 备注 / 角色 / 状态 */

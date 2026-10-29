@@ -6,20 +6,27 @@ export function getUsers() {
 }
 
 export function addUser(data: {
-  username: string
+  username?: string
   nickname?: string
-  email?: string
+  email: string
+  emailCode: string
   password: string
   role?: string
 }) {
   return request.post('/system/user/add', data)
 }
 
-// 编辑用户：昵称 / 邮箱 / 备注 / 角色 / 状态（email 传空表示解绑）
+// 给待绑定的邮箱发验证码（绑定邮箱必须先验证）
+export function sendBindCode(email: string) {
+  return request.post('/system/user/email-code', { email })
+}
+
+// 编辑用户：昵称 / 邮箱 / 备注 / 角色 / 状态（email 传空表示解绑，换绑需带 emailCode）
 export function updateUser(data: {
   id: number
   nickname?: string
   email?: string
+  emailCode?: string
   role?: string
   status?: string
   remark?: string

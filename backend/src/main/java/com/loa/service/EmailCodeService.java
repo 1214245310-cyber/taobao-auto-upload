@@ -61,6 +61,15 @@ public class EmailCodeService {
 
     /** 发送验证码，返回规范化后的邮箱 */
     public String send(String email, String clientIp) {
+        return send(email, clientIp, false);
+    }
+
+    /**
+     * 发送验证码。
+     * skipIpQuota=true 用于管理员在后台批量给新用户绑定邮箱——
+     * 后台操作天然需要登录态且是同一台机器，按 IP 限流会误伤；单邮箱冷却与全站日上限仍然生效。
+     */
+    public String send(String email, String clientIp, boolean skipIpQuota) {
         if (!mailService.isConfigured()) {
             throw new IllegalArgumentException("邮件服务未配置，请联系管理员设置发件邮箱与授权码");
         }
@@ -68,7 +77,9 @@ public class EmailCodeService {
         long now = System.currentTimeMillis();
 
         acquireGlobalQuota(now);
-        acquireIpQuota(clientIp, now);
+        if (!skipIpQuota) {
+            acquireIpQuota(clientIp, now);
+        }
 
         Entry e = store.computeIfAbsent(key, k -> new Entry());
         synchronized (e) {

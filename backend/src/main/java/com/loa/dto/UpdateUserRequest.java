@@ -13,6 +13,9 @@ public class UpdateUserRequest {
     /** 空字符串表示解绑邮箱 */
     private String email;
 
+    /** 改成新邮箱时必填：该邮箱收到的验证码 */
+    private String emailCode;
+
     /** ADMIN / USER */
     private String role;
 
@@ -27,6 +30,8 @@ public class UpdateUserRequest {
     public void setNickname(String nickname) { this.nickname = nickname; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+    public String getEmailCode() { return emailCode; }
+    public void setEmailCode(String emailCode) { this.emailCode = emailCode; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
     public String getStatus() { return status; }
