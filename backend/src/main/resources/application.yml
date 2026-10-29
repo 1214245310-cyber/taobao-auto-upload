@@ -48,7 +48,8 @@ loa:
     username: admin
     password: admin123
   session:
-    ttl-seconds: 7200
+    # 登录态有效期（秒）：2592000 = 30 天。token 落库，重启部署不会掉线。
+    ttl-seconds: 2592000
   mail:
     # 发件人必须与上面的 username 一致，QQ 邮箱会校验
     from: ${LOA_MAIL_USERNAME:}

@@ -306,6 +306,15 @@ async function handleRegister() {
 onMounted(() => {
   loadRemembered()
   refreshCode()
+  // 由拦截器判定登录失效跳转过来时，给一句明确提示
+  try {
+    if (sessionStorage.getItem('loa_auth_expired')) {
+      sessionStorage.removeItem('loa_auth_expired')
+      ElMessage.warning('登录状态已过期，请重新登录')
+    }
+  } catch {
+    // 忽略
+  }
 })
 onUnmounted(() => {
   if (countdownTimer) window.clearInterval(countdownTimer)

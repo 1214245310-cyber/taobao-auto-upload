@@ -67,11 +67,24 @@ const router = createRouter({
 })
 
 // 登录拦截：未携带 token 跳登录页（参照原系统 hash 路由 + redirect 参数）
-router.beforeEach((to) => {
+// 有 token 但还没拿到用户信息时，先校验一次，避免 token 已失效却停在后台页面
+router.beforeEach(async (to) => {
   const user = useUserStore()
-  if (!to.meta.public && !user.token) {
+  if (to.meta.public) return true
+  if (!user.token) {
     return { path: '/auth/login', query: { redirect: to.fullPath } }
   }
+  if (!user.userInfo.role) {
+    try {
+      await user.fetchInfo()
+    } catch {
+      // 登录失效时拦截器已清 token 并跳登录页；这里再兜一层
+      if (!localStorage.getItem('token')) {
+        return { path: '/auth/login', query: { redirect: to.fullPath } }
+      }
+    }
+  }
+  return true
 })
 
 export default router

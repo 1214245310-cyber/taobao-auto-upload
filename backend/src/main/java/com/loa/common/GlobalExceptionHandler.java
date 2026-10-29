@@ -13,6 +13,10 @@ public class GlobalExceptionHandler {
         return R.fail(400, msg);
     }
 
+    /** 未登录：返回 401，前端收到后清 token 并跳登录页 */
+    @ExceptionHandler(UnauthorizedException.class)
+    public R<Void> handleUnauthorized(UnauthorizedException e) { return R.fail(401, e.getMessage()); }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public R<Void> handleIllegal(IllegalArgumentException e) { return R.fail(400, e.getMessage()); }
 

@@ -1,8 +1,11 @@
 package com.loa.service;
 
+import com.loa.common.UnauthorizedException;
 import com.loa.dto.RegisterRequest;
 import com.loa.entity.User;
+import com.loa.entity.UserToken;
 import com.loa.repository.UserRepository;
+import com.loa.repository.UserTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,10 +26,10 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AuthService {
 
     private final UserRepository userRepository;
+    private final UserTokenRepository userTokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailCodeService emailCodeService;
     private final Map<String, String> captchaStore = new ConcurrentHashMap<>();
-    private final Map<String, Long> tokenStore = new ConcurrentHashMap<>();
     private final long ttlSeconds;
     /** 连续登录失败达到该次数即锁定 */
     private static final int MAX_LOGIN_FAIL = 5;
@@ -34,10 +37,12 @@ public class AuthService {
     private static final int LOCK_MINUTES = 10;
 
     public AuthService(UserRepository userRepository,
+                       UserTokenRepository userTokenRepository,
                        PasswordEncoder passwordEncoder,
                        EmailCodeService emailCodeService,
-                       @Value("${loa.session.ttl-seconds:7200}") long ttlSeconds) {
+                       @Value("${loa.session.ttl-seconds:2592000}") long ttlSeconds) {
         this.userRepository = userRepository;
+        this.userTokenRepository = userTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailCodeService = emailCodeService;
         this.ttlSeconds = ttlSeconds;
@@ -125,7 +130,14 @@ public class AuthService {
         userRepository.save(user);
 
         String token = UUID.randomUUID().toString().replace("-", "");
-        tokenStore.put(token, user.getId());
+        LocalDateTime expiresAt = now.plusSeconds(ttlSeconds);
+        userTokenRepository.save(new UserToken(token, user.getId(), now, expiresAt));
+        // 顺手清理已过期令牌，避免表无限增长
+        try {
+            userTokenRepository.deleteAll(userTokenRepository.findByExpiresAtBefore(now));
+        } catch (Exception ignored) {
+            // 清理失败不影响登录
+        }
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("access_token", token);
         m.put("expires_in", ttlSeconds);
@@ -134,21 +146,33 @@ public class AuthService {
 
     public void logout(String authorization) {
         if (authorization != null && !authorization.isBlank()) {
-            tokenStore.remove(authorization.replace("Bearer ", "").trim());
+            String token = authorization.replace("Bearer ", "").trim();
+            userTokenRepository.findById(token).ifPresent(userTokenRepository::delete);
         }
     }
 
     public User currentUser(String authorization) {
         if (authorization == null || authorization.isBlank()) {
-            throw new IllegalArgumentException("未登录或登录已过期");
+            throw new UnauthorizedException("未登录或登录已过期");
         }
         String token = authorization.replace("Bearer ", "").trim();
-        Long userId = tokenStore.get(token);
-        if (userId == null) {
-            throw new IllegalArgumentException("未登录或登录已过期");
+        UserToken saved = userTokenRepository.findById(token)
+                .orElseThrow(() -> new UnauthorizedException("未登录或登录已过期"));
+        if (saved.getExpiresAt() != null && saved.getExpiresAt().isBefore(LocalDateTime.now())) {
+            userTokenRepository.delete(saved);
+            throw new UnauthorizedException("登录已过期，请重新登录");
         }
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+        return userRepository.findById(saved.getUserId())
+                .orElseThrow(() -> new UnauthorizedException("账号不存在，请重新登录"));
+    }
+
+    /** 让某个用户的全部登录令牌失效（改密/重置密码后强制重新登录） */
+    public void revokeTokens(Long userId) {
+        try {
+            userTokenRepository.deleteAll(userTokenRepository.findByUserId(userId));
+        } catch (Exception ignored) {
+            // 忽略：即使清理失败，密码已经变了
+        }
     }
 
     /** 校验并立即失效验证码 */
@@ -278,6 +302,8 @@ public class AuthService {
         }
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+        // 改密后旧登录态全部作废
+        revokeTokens(user.getId());
     }
 
     /**
@@ -293,5 +319,7 @@ public class AuthService {
         u.setLoginFailCount(0);
         u.setLockedUntil(null);
         userRepository.save(u);
+        // 被重置密码的账号需要重新登录
+        revokeTokens(u.getId());
     }
 }
