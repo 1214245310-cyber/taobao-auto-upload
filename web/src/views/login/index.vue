@@ -14,7 +14,12 @@
 
       <el-form :model="form" @submit.prevent="handleLogin">
         <el-form-item>
-          <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" @keyup.enter="handleLogin" />
+          <el-input
+            v-model="form.username"
+            placeholder="用户名 / 注册邮箱"
+            :prefix-icon="User"
+            @keyup.enter="handleLogin"
+          />
         </el-form-item>
         <el-form-item>
           <el-input
@@ -45,6 +50,8 @@
           登录
         </el-button>
       </el-form>
+
+      <p class="login-hint">用户名和注册邮箱都能登录</p>
 
       <div class="switch-tip">
         还没有账号？
@@ -123,14 +130,21 @@
       @closed="resetForgotForm"
     >
       <p class="forgot-tip">
-        填写注册时绑定的邮箱，我们会发送 6 位验证码；验证通过即可设置新密码。
-        没有绑定邮箱的账号请联系管理员重置。
+        需要同时填对<strong>账号</strong>和该账号绑定的<strong>邮箱</strong>，我们才会发验证码；
+        验证通过即可设置新密码。未绑定邮箱的账号请联系管理员重置。
       </p>
       <el-form :model="forgotForm" label-position="top">
-        <el-form-item label="注册邮箱">
+        <el-form-item label="账号">
+          <el-input
+            v-model="forgotForm.username"
+            placeholder="用户名，例如 xby1111"
+            :prefix-icon="User"
+          />
+        </el-form-item>
+        <el-form-item label="绑定邮箱">
           <el-input
             v-model="forgotForm.email"
-            placeholder="例如 yourname@qq.com"
+            placeholder="该账号注册时填写的邮箱"
             :prefix-icon="Message"
           />
         </el-form-item>
@@ -223,6 +237,7 @@ const forgotSending = ref(false)
 const forgotCountdown = ref(0)
 let forgotTimer: number | undefined
 const forgotForm = reactive({
+  username: '',
   email: '',
   emailCode: '',
   newPassword: '',
@@ -391,13 +406,20 @@ async function handleRegister() {
 
 /* ---------------- 忘记密码 ---------------- */
 function openForgot() {
-  // 上次用过的邮箱自动带出来，少打一遍
-  const cached = localStorage.getItem(EMAIL_CACHE_KEY)
-  if (!forgotForm.email && cached) forgotForm.email = cached
+  // 登录框里填的是用户名就先带过来；填的是邮箱就带邮箱
+  const account = form.username.trim()
+  if (!forgotForm.username && account && !account.includes('@')) {
+    forgotForm.username = account
+  }
+  const cachedEmail = localStorage.getItem(EMAIL_CACHE_KEY)
+  if (!forgotForm.email && (account.includes('@') || cachedEmail)) {
+    forgotForm.email = account.includes('@') ? account : cachedEmail || ''
+  }
   forgotVisible.value = true
 }
 
 function resetForgotForm() {
+  forgotForm.username = ''
   forgotForm.email = ''
   forgotForm.emailCode = ''
   forgotForm.newPassword = ''
@@ -417,24 +439,33 @@ function startForgotCountdown(seconds: number) {
 }
 
 async function sendForgotCode() {
+  if (!forgotForm.username.trim()) {
+    return ElMessage.warning('请输入账号')
+  }
   if (!EMAIL_RE.test(forgotForm.email)) {
-    return ElMessage.warning('请输入注册时填写的邮箱')
+    return ElMessage.warning('请输入该账号绑定的邮箱')
   }
   forgotSending.value = true
   try {
-    const res = await sendResetCode(forgotForm.email.trim())
+    const res = await sendResetCode({
+      username: forgotForm.username.trim(),
+      email: forgotForm.email.trim(),
+    })
     ElMessage.success('验证码已发送，请查收邮件（没收到就看下垃圾箱）')
     startForgotCountdown((res.data?.cooldown as number) || 60)
   } catch {
-    // 错误提示已由 request 拦截器统一弹出（含「该邮箱未注册」）
+    // 错误提示已由 request 拦截器统一弹出（含账号不存在 / 邮箱不匹配）
   } finally {
     forgotSending.value = false
   }
 }
 
 async function handleResetPassword() {
+  if (!forgotForm.username.trim()) {
+    return ElMessage.warning('请输入账号')
+  }
   if (!EMAIL_RE.test(forgotForm.email)) {
-    return ElMessage.warning('请输入注册时填写的邮箱')
+    return ElMessage.warning('请输入该账号绑定的邮箱')
   }
   if (!/^\d{6}$/.test(forgotForm.emailCode)) {
     return ElMessage.warning('请输入 6 位邮箱验证码')
@@ -448,6 +479,7 @@ async function handleResetPassword() {
   forgotLoading.value = true
   try {
     const res = await resetPasswordByEmail({
+      username: forgotForm.username.trim(),
       email: forgotForm.email.trim(),
       emailCode: forgotForm.emailCode,
       newPassword: forgotForm.newPassword,
@@ -675,6 +707,12 @@ onUnmounted(() => {
   text-align: center;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.7);
+}
+.login-hint {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .copyright {

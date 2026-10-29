@@ -32,13 +32,14 @@ export function register(data: {
   return request.post('/auth/register', data)
 }
 
-// 忘记密码：向注册邮箱发验证码（后端先校验邮箱是否注册过）
-export function sendResetCode(email: string) {
-  return request.post('/auth/password/send-code', { email })
+// 忘记密码：账号 + 注册邮箱匹配后才发验证码
+export function sendResetCode(data: { username: string; email: string }) {
+  return request.post('/auth/password/send-code', data)
 }
 
-// 忘记密码：验证码 + 新密码重置
+// 忘记密码：账号 + 邮箱 + 验证码 + 新密码
 export function resetPasswordByEmail(data: {
+  username: string
   email: string
   emailCode: string
   newPassword: string

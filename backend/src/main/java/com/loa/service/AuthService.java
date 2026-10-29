@@ -103,30 +103,41 @@ public class AuthService {
     }
 
     /**
-     * 忘记密码第一步：发验证码前先确认邮箱确实注册过，
-     * 既避免把服务器当发信机，也让用户少等一封注定没用的邮件。
+     * 忘记密码发码前的校验：账号与邮箱必须属于同一个用户。
+     * 只凭邮箱就能重置密码太松，谁掌握邮箱就能接管账号；账号 + 绑定邮箱双要素才放行。
      */
-    public String assertEmailRegistered(String email) {
+    public String assertAccountEmailMatched(String username, String email) {
+        String uname = username == null ? "" : username.trim();
+        if (uname.isEmpty()) {
+            throw new IllegalArgumentException("请输入账号");
+        }
         String key = email == null ? "" : email.trim().toLowerCase();
         if (key.isEmpty()) {
             throw new IllegalArgumentException("请输入邮箱");
         }
-        userRepository.findByEmail(key)
-                .orElseThrow(() -> new IllegalArgumentException("该邮箱未注册，请确认是注册时填写的邮箱"));
+        User u = userRepository.findByUsername(uname)
+                .orElseThrow(() -> new IllegalArgumentException("账号「" + uname + "」不存在"));
+        String bound = u.getEmail() == null ? "" : u.getEmail().trim().toLowerCase();
+        if (bound.isEmpty()) {
+            throw new IllegalArgumentException("该账号未绑定邮箱，无法自助找回，请联系管理员重置密码");
+        }
+        if (!bound.equals(key)) {
+            throw new IllegalArgumentException("账号与邮箱不匹配，请填写该账号绑定的邮箱");
+        }
         return key;
     }
 
     /**
-     * 忘记密码第二步：邮箱验证码 + 新密码。
-     * 校验顺序先密码一致性、再账号存在、最后消费验证码，避免密码不一致白白废掉一次验证码。
+     * 忘记密码第二步：账号 + 邮箱 + 邮箱验证码 + 新密码。
+     * 校验顺序先密码一致性、再账号邮箱匹配、最后消费验证码，避免密码不一致白白废掉一次验证码。
      */
     public Map<String, Object> resetPasswordByEmail(ResetPasswordByEmailRequest req) {
         if (!req.getNewPassword().equals(req.getConfirmPassword())) {
             throw new IllegalArgumentException("两次输入的密码不一致");
         }
-        String email = assertEmailRegistered(req.getEmail());
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("该邮箱未注册"));
+        String email = assertAccountEmailMatched(req.getUsername(), req.getEmail());
+        User user = userRepository.findByUsername(req.getUsername().trim())
+                .orElseThrow(() -> new IllegalArgumentException("账号不存在"));
         emailCodeService.verify(email, req.getEmailCode());
 
         user.setPassword(passwordEncoder.encode(req.getNewPassword()));
@@ -146,7 +157,10 @@ public class AuthService {
 
     public Map<String, Object> login(String username, String password, String code, String uuid, String clientIp) {
         verifyCaptcha(code, uuid);
-        User user = userRepository.findByUsername(username == null ? "" : username.trim())
+        // 账号一栏既可以是用户名，也可以是注册邮箱（只有绑过邮箱的账号才走得通）
+        String account = username == null ? "" : username.trim();
+        User user = userRepository.findByUsername(account)
+                .or(() -> userRepository.findByEmail(account.toLowerCase()))
                 .orElseThrow(() -> new IllegalArgumentException("用户名或密码错误"));
 
         // 失败次数过多时临时锁定，挡住对着一个账号硬试密码的脚本

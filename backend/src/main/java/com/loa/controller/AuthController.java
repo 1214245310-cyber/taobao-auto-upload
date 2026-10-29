@@ -2,6 +2,7 @@ package com.loa.controller;
 
 import com.loa.common.R;
 import com.loa.dto.EmailCodeRequest;
+import com.loa.dto.ForgotPasswordCodeRequest;
 import com.loa.dto.LoginRequest;
 import com.loa.dto.RegisterRequest;
 import com.loa.dto.ResetPasswordByEmailRequest;
@@ -43,13 +44,13 @@ public class AuthController {
     }
 
     /**
-     * 忘记密码第一步：向注册邮箱发验证码。
-     * 与注册用的 /email-code 分开，先校验邮箱是否已注册，且前端可提示"未注册"。
+     * 忘记密码第一步：账号 + 注册邮箱匹配后发验证码。
+     * 与注册用的 /email-code 分开，避免"只给邮箱就能重置密码"。
      */
     @PostMapping("/password/send-code")
-    public R<Map<String, Object>> sendResetCode(@Valid @RequestBody EmailCodeRequest req,
+    public R<Map<String, Object>> sendResetCode(@Valid @RequestBody ForgotPasswordCodeRequest req,
                                                 HttpServletRequest request) {
-        String email = authService.assertEmailRegistered(req.getEmail());
+        String email = authService.assertAccountEmailMatched(req.getUsername(), req.getEmail());
         emailCodeService.send(email, clientIp(request));
         Map<String, Object> m = new LinkedHashMap<>();
         m.put("email", email);
@@ -58,7 +59,7 @@ public class AuthController {
         return R.ok(m);
     }
 
-    /** 忘记密码第二步：邮箱验证码校验通过后重置密码 */
+    /** 忘记密码第二步：账号 + 邮箱 + 验证码校验通过后重置密码 */
     @PostMapping("/password/reset")
     public R<Map<String, Object>> resetPasswordByEmail(
             @Valid @RequestBody ResetPasswordByEmailRequest req) {
