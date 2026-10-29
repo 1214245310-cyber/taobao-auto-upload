@@ -28,7 +28,12 @@
         </el-form-item>
         <div class="remember-row">
           <span class="remember-tip">默认已记住账号</span>
-          <el-checkbox v-model="rememberPassword">记住密码</el-checkbox>
+          <div class="remember-right">
+            <el-checkbox v-model="rememberPassword">记住密码</el-checkbox>
+            <el-link type="primary" :underline="false" class="forgot-link" @click="openForgot">
+              忘记密码？
+            </el-link>
+          </div>
         </div>
         <el-form-item>
           <div class="captcha-row">
@@ -108,6 +113,72 @@
         <el-button type="primary" :loading="regLoading" @click="handleRegister">注册</el-button>
       </template>
     </el-dialog>
+
+    <!-- 忘记密码：注册邮箱 + 邮箱验证码 -->
+    <el-dialog
+      v-model="forgotVisible"
+      title="忘记密码"
+      width="420px"
+      :close-on-click-modal="false"
+      @closed="resetForgotForm"
+    >
+      <p class="forgot-tip">
+        填写注册时绑定的邮箱，我们会发送 6 位验证码；验证通过即可设置新密码。
+        没有绑定邮箱的账号请联系管理员重置。
+      </p>
+      <el-form :model="forgotForm" label-position="top">
+        <el-form-item label="注册邮箱">
+          <el-input
+            v-model="forgotForm.email"
+            placeholder="例如 yourname@qq.com"
+            :prefix-icon="Message"
+          />
+        </el-form-item>
+        <el-form-item label="邮箱验证码">
+          <div class="captcha-row">
+            <el-input
+              v-model="forgotForm.emailCode"
+              placeholder="6 位数字"
+              maxlength="6"
+              :prefix-icon="Key"
+            />
+            <el-button
+              class="code-btn"
+              :disabled="forgotCountdown > 0"
+              :loading="forgotSending"
+              @click="sendForgotCode"
+            >
+              {{ forgotCountdown > 0 ? forgotCountdown + 's' : '获取验证码' }}
+            </el-button>
+          </div>
+        </el-form-item>
+        <el-form-item label="新密码">
+          <el-input
+            v-model="forgotForm.newPassword"
+            type="password"
+            show-password
+            placeholder="6-32 位"
+            :prefix-icon="Lock"
+          />
+        </el-form-item>
+        <el-form-item label="确认新密码">
+          <el-input
+            v-model="forgotForm.confirmPassword"
+            type="password"
+            show-password
+            placeholder="再次输入新密码"
+            :prefix-icon="Lock"
+            @keyup.enter="handleResetPassword"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="forgotVisible = false">取消</el-button>
+        <el-button type="primary" :loading="forgotLoading" @click="handleResetPassword">
+          重置密码
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -117,7 +188,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { User, Lock, Key, Message } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/user'
-import { register as apiRegister, sendEmailCode } from '@/api/auth'
+import { register as apiRegister, resetPasswordByEmail, sendEmailCode, sendResetCode } from '@/api/auth'
 import loginBg from '@/assets/login-bg.webp'
 
 const user = useUserStore()
@@ -144,6 +215,20 @@ const regForm = reactive({
 })
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+// 忘记密码
+const forgotVisible = ref(false)
+const forgotLoading = ref(false)
+const forgotSending = ref(false)
+const forgotCountdown = ref(0)
+let forgotTimer: number | undefined
+const forgotForm = reactive({
+  email: '',
+  emailCode: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+const EMAIL_CACHE_KEY = 'loa_last_email'
 
 // 记住密码（账号默认始终记住）
 const rememberPassword = ref(false)
@@ -294,12 +379,98 @@ async function handleRegister() {
     })
     ElMessage.success('注册成功，请使用新账号登录')
     registerVisible.value = false
+    localStorage.setItem(EMAIL_CACHE_KEY, regForm.email.trim())
     form.username = regForm.username
     form.password = ''
   } catch {
     // 错误提示已由 request 拦截器统一弹出
   } finally {
     regLoading.value = false
+  }
+}
+
+/* ---------------- 忘记密码 ---------------- */
+function openForgot() {
+  // 上次用过的邮箱自动带出来，少打一遍
+  const cached = localStorage.getItem(EMAIL_CACHE_KEY)
+  if (!forgotForm.email && cached) forgotForm.email = cached
+  forgotVisible.value = true
+}
+
+function resetForgotForm() {
+  forgotForm.email = ''
+  forgotForm.emailCode = ''
+  forgotForm.newPassword = ''
+  forgotForm.confirmPassword = ''
+}
+
+function startForgotCountdown(seconds: number) {
+  forgotCountdown.value = seconds
+  if (forgotTimer) window.clearInterval(forgotTimer)
+  forgotTimer = window.setInterval(() => {
+    forgotCountdown.value -= 1
+    if (forgotCountdown.value <= 0 && forgotTimer) {
+      window.clearInterval(forgotTimer)
+      forgotTimer = undefined
+    }
+  }, 1000)
+}
+
+async function sendForgotCode() {
+  if (!EMAIL_RE.test(forgotForm.email)) {
+    return ElMessage.warning('请输入注册时填写的邮箱')
+  }
+  forgotSending.value = true
+  try {
+    const res = await sendResetCode(forgotForm.email.trim())
+    ElMessage.success('验证码已发送，请查收邮件（没收到就看下垃圾箱）')
+    startForgotCountdown((res.data?.cooldown as number) || 60)
+  } catch {
+    // 错误提示已由 request 拦截器统一弹出（含「该邮箱未注册」）
+  } finally {
+    forgotSending.value = false
+  }
+}
+
+async function handleResetPassword() {
+  if (!EMAIL_RE.test(forgotForm.email)) {
+    return ElMessage.warning('请输入注册时填写的邮箱')
+  }
+  if (!/^\d{6}$/.test(forgotForm.emailCode)) {
+    return ElMessage.warning('请输入 6 位邮箱验证码')
+  }
+  if (forgotForm.newPassword.length < 6 || forgotForm.newPassword.length > 32) {
+    return ElMessage.warning('新密码长度需为 6-32 位')
+  }
+  if (forgotForm.newPassword !== forgotForm.confirmPassword) {
+    return ElMessage.warning('两次输入的新密码不一致')
+  }
+  forgotLoading.value = true
+  try {
+    const res = await resetPasswordByEmail({
+      email: forgotForm.email.trim(),
+      emailCode: forgotForm.emailCode,
+      newPassword: forgotForm.newPassword,
+      confirmPassword: forgotForm.confirmPassword,
+    })
+    const username = (res.data?.username as string) || ''
+    ElMessage.success('密码已重置，请用新密码登录')
+    forgotVisible.value = false
+    localStorage.setItem(EMAIL_CACHE_KEY, forgotForm.email.trim())
+    // 重置后自动带出账号，并把之前记住的旧密码清掉
+    if (username) {
+      form.username = username
+      localStorage.setItem(REMEMBER_USER_KEY, username)
+    }
+    form.password = ''
+    form.code = ''
+    localStorage.removeItem(REMEMBER_PWD_KEY)
+    rememberPassword.value = false
+    refreshCode()
+  } catch {
+    // 错误提示已由 request 拦截器统一弹出
+  } finally {
+    forgotLoading.value = false
   }
 }
 
@@ -318,6 +489,7 @@ onMounted(() => {
 })
 onUnmounted(() => {
   if (countdownTimer) window.clearInterval(countdownTimer)
+  if (forgotTimer) window.clearInterval(forgotTimer)
 })
 </script>
 
@@ -454,6 +626,27 @@ onUnmounted(() => {
 .remember-tip {
   color: rgba(255, 255, 255, 0.55);
   font-size: 12px;
+}
+.remember-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.forgot-link {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.85);
+}
+.forgot-link:hover {
+  color: #22d3ee;
+}
+.forgot-tip {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #909399;
+  background: #f5f7fa;
+  border-radius: 6px;
+  padding: 10px 12px;
 }
 .remember-row :deep(.el-checkbox__label) {
   color: rgba(255, 255, 255, 0.8);

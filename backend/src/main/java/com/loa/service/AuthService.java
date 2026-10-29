@@ -2,6 +2,7 @@ package com.loa.service;
 
 import com.loa.common.UnauthorizedException;
 import com.loa.dto.RegisterRequest;
+import com.loa.dto.ResetPasswordByEmailRequest;
 import com.loa.entity.User;
 import com.loa.entity.UserToken;
 import com.loa.repository.UserRepository;
@@ -96,6 +97,48 @@ public class AuthService {
         m.put("username", u.getUsername());
         m.put("nickname", u.getNickname());
         m.put("email", u.getEmail());
+        return m;
+    }
+
+    /**
+     * 忘记密码第一步：发验证码前先确认邮箱确实注册过，
+     * 既避免把服务器当发信机，也让用户少等一封注定没用的邮件。
+     */
+    public String assertEmailRegistered(String email) {
+        String key = email == null ? "" : email.trim().toLowerCase();
+        if (key.isEmpty()) {
+            throw new IllegalArgumentException("请输入邮箱");
+        }
+        userRepository.findByEmail(key)
+                .orElseThrow(() -> new IllegalArgumentException("该邮箱未注册，请确认是注册时填写的邮箱"));
+        return key;
+    }
+
+    /**
+     * 忘记密码第二步：邮箱验证码 + 新密码。
+     * 校验顺序先密码一致性、再账号存在、最后消费验证码，避免密码不一致白白废掉一次验证码。
+     */
+    public Map<String, Object> resetPasswordByEmail(ResetPasswordByEmailRequest req) {
+        if (!req.getNewPassword().equals(req.getConfirmPassword())) {
+            throw new IllegalArgumentException("两次输入的密码不一致");
+        }
+        String email = assertEmailRegistered(req.getEmail());
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("该邮箱未注册"));
+        emailCodeService.verify(email, req.getEmailCode());
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        user.setLoginFailCount(0);
+        user.setLockedUntil(null);
+        // 凭邮箱验证码重置，视为邮箱已确属本人
+        user.setEmailVerified("1");
+        userRepository.save(user);
+        // 旧登录态全部作废，防止密码泄露后对方还挂在线上
+        revokeTokens(user.getId());
+
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("username", user.getUsername());
+        m.put("nickname", user.getNickname());
         return m;
     }
 

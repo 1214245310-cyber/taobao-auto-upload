@@ -32,6 +32,21 @@ export function register(data: {
   return request.post('/auth/register', data)
 }
 
+// 忘记密码：向注册邮箱发验证码（后端先校验邮箱是否注册过）
+export function sendResetCode(email: string) {
+  return request.post('/auth/password/send-code', { email })
+}
+
+// 忘记密码：验证码 + 新密码重置
+export function resetPasswordByEmail(data: {
+  email: string
+  emailCode: string
+  newPassword: string
+  confirmPassword: string
+}) {
+  return request.post('/auth/password/reset', data)
+}
+
 export function getInfo() {
   return request.get('/system/user/getInfo')
 }

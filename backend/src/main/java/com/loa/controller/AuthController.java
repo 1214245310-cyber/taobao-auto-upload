@@ -4,6 +4,7 @@ import com.loa.common.R;
 import com.loa.dto.EmailCodeRequest;
 import com.loa.dto.LoginRequest;
 import com.loa.dto.RegisterRequest;
+import com.loa.dto.ResetPasswordByEmailRequest;
 import com.loa.service.AuthService;
 import com.loa.service.EmailCodeService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +40,29 @@ public class AuthController {
         m.put("ttl", EmailCodeService.TTL_MINUTES * 60);
         m.put("cooldown", EmailCodeService.COOLDOWN_SECONDS);
         return R.ok(m);
+    }
+
+    /**
+     * 忘记密码第一步：向注册邮箱发验证码。
+     * 与注册用的 /email-code 分开，先校验邮箱是否已注册，且前端可提示"未注册"。
+     */
+    @PostMapping("/password/send-code")
+    public R<Map<String, Object>> sendResetCode(@Valid @RequestBody EmailCodeRequest req,
+                                                HttpServletRequest request) {
+        String email = authService.assertEmailRegistered(req.getEmail());
+        emailCodeService.send(email, clientIp(request));
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("email", email);
+        m.put("ttl", EmailCodeService.TTL_MINUTES * 60);
+        m.put("cooldown", EmailCodeService.COOLDOWN_SECONDS);
+        return R.ok(m);
+    }
+
+    /** 忘记密码第二步：邮箱验证码校验通过后重置密码 */
+    @PostMapping("/password/reset")
+    public R<Map<String, Object>> resetPasswordByEmail(
+            @Valid @RequestBody ResetPasswordByEmailRequest req) {
+        return R.ok(authService.resetPasswordByEmail(req));
     }
 
     @PostMapping("/login")
