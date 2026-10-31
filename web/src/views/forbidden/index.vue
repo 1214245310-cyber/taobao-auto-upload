@@ -138,8 +138,10 @@
 
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link type="danger" @click="remove(row)">删除</el-button>
+            <div class="op-cell">
+              <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+              <el-button link type="danger" @click="remove(row)">删除</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -597,6 +599,16 @@ onMounted(load)
   text-decoration: line-through;
 }
 
+.op-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.op-cell .el-button + .el-button {
+  margin-left: 0;
+}
 .time {
   color: #909399;
 }
